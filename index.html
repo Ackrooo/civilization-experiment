@@ -1111,7 +1111,7 @@ function tmCreatePrivateRoom(){
  tmSetMultiplayer();tmRoomAction="create";tmRoomReady=false;tmRoomCode="";
  $("tm-code").value="";$("tm-code").style.display="none";tmShow("private-code");
  $("tm-private-result").textContent="Connecting to multiplayer server...";
- tmConnect().then(socket=>new Promise((resolve,reject)=>socket.emit("create-room",{name:tmSelectedName()},resolve)))
+ tmConnect().then(socket=>new Promise((resolve,reject)=>socket.emit("create-room",resolve)))
  .then(result=>{if(!result?.ok)throw new Error(result?.error||"Room creation failed.");tmRoomCode=result.code;tmRoomReady=true;$("tm-private-result").textContent="Private room created. Share this invite code with your friend: "+tmRoomCode+". Press Continue to enter.";$("tm-code").style.display="none"})
  .catch(err=>{$("tm-private-result").textContent=err.message;tmRoomReady=false});
 }
