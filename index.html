@@ -1193,7 +1193,7 @@ function tmReadChars(){try{const raw=localStorage.getItem(TM_CHAR_KEY);const par
 function tmWriteChars(){try{localStorage.setItem(TM_CHAR_KEY,JSON.stringify(tmChars))}catch(e){console.warn("Could not save character profiles:",e)}}
 function tmSelectedName(){const c=tmChars[tmSelectedChar];return c&&c.name?String(c.name):"Player"}
 function tmSetMultiplayer(){tmGameMode="multiplayer";if($("spd")){$("spd").value="1";$("spd").disabled=true}if($("pilotBtn"))$("pilotBtn").disabled=true;if(typeof autopilot!=="undefined")autopilot=false;if(P){P.n=tmSelectedName();const c=tmChars[tmSelectedChar];if(c&&c.color)P.col=c.color}}
-function tmRenderOwnerControls(){const b=$("cmdBtn");if(b)b.style.display=tmPrivateRoom&&tmIsOwner?"inline-block":"none"}
+function tmRenderOwnerControls(){const b=$("cmdBtn");if(b)b.style.display=tmPrivateRoom&&(tmIsOwner||!!tmOwnerToken)?"inline-block":"none"}
 function tmBuildCommands(){
  const out=[],seen=new Set(),addCmd=(id,label,category,description)=>{if(!seen.has(id)){seen.add(id);out.push({id,label,category,description})}};
  addCmd("server-reset","Reset server","server","Generate a fresh world for everyone in this private server");
