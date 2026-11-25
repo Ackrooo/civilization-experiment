@@ -1066,13 +1066,13 @@ if(isSnow()&&SET.part){ctx.fillStyle="rgba(255,255,255,.85)";const n=Math.floor(
 let last=performance.now();
 let dioBoss=null,dioStopUntil=0,dioNextStop=0,dioStopPendingUntil=0,dioStopPending=false,dioAnim=0,dioHitAt=0,dioWasStopped=false;
 function dioAudio(id){const el=$(id);if(!el)return;["dioTheme","dioStopAudio","dioResumeAudio","dioBarrageAudio"].forEach(k=>{const q=$(k);if(q&&q!==el){q.pause();if(k!=="dioTheme")q.currentTime=0}});const dist=dioBoss&&P?Math.hypot(dioBoss.x-P.x,dioBoss.y-P.y):0;el.volume=vol.m*Math.max(.08,1-dist/42);if(id==="dioTheme"&&G.m)G.m.gain.value=0;el.currentTime=0;el.play().catch(()=>{});}
-function dioSpawn(){if(dioBoss&&dioBoss.hp>0)return tip("DIO is already here.");dioBoss={x:Math.max(4,Math.min(WS-4,P.x+7)),y:Math.max(4,Math.min(WS-4,P.y+2)),hp:500,maxHp:500,fl:-1,attack:0,teleportNext:performance.now()+6500};dioStopUntil=0;dioNextStop=0;dioStopPending=false;dioStopPendingUntil=0;dioAudio("dioTheme");tip("DIO BRANDO has entered the world.");}
+function dioSpawn(){if(dioBoss&&dioBoss.hp>0)return tip("DIO is already here.");const ang=rr()*Math.PI*2,dist=50;dioBoss={x:clamp(P.x+Math.cos(ang)*dist,4,WS-4),y:clamp(P.y+Math.sin(ang)*dist,4,WS-4),hp:500,maxHp:500,fl:-1,attack:0,teleportNext:performance.now()+6500};dioStopUntil=0;dioNextStop=performance.now()+30000;dioStopPending=false;dioStopPendingUntil=0;dioWasStopped=false;dioAudio("dioTheme");tip("DIO BRANDO has entered the world.");}
 function dioTarget(){let t=P,d=Math.hypot(P.x-dioBoss.x,P.y-dioBoss.y);for(const a of actors){if(a===P||a.dead||!a.ai)continue;const q=Math.hypot(a.x-dioBoss.x,a.y-dioBoss.y);if(q<d){d=q;t=a}}return t;}
 function dioTick(dt){
  if(!dioBoss||dioBoss.hp<=0)return;
  dioAnim+=dt;const now=performance.now(),b=dioBoss;
  if(dioStopPending){
-  if(now>=dioStopPendingUntil){dioStopPending=false;dioStopUntil=now+10000;dioNextStop=now+30000;dioWasStopped=true;if(G.m)G.m.gain.value=0;if(WG)WG.gain.value=0;if(WT)WT.gain.value=0;if(RG)RG.gain.value=0;tip("THE WORLD — TIME HAS STOPPED");}
+  if(now>=dioStopPendingUntil){dioStopPending=false;dioStopUntil=now+5000;dioNextStop=now+30000;dioWasStopped=true;if(G.m)G.m.gain.value=0;if(WG)WG.gain.value=0;if(WT)WT.gain.value=0;if(RG)RG.gain.value=0;tip("THE WORLD — TIME HAS STOPPED");}
   return;
  }
  if(now<dioStopUntil){
@@ -1135,7 +1135,7 @@ eat:()=>{const s=P.inv[P.sel];if(s&&IT[s.i].f)eat(P,P.sel);else{const j=bestFood
 settings:()=>{if([...PANS].some(q=>vis(q)))closeAll();else togg("st")},zoomin:()=>zoom=Math.min(6,zoom*1.2),zoomout:()=>zoom=Math.max(1,zoom/1.2),sleep:()=>{const b=STR.find(s=>s.t==22&&Math.hypot(s.x-P.x,s.y-P.y)<4);if(b&&dark()>.25){P.sl=1;tip("you fall asleep")}else tip(b?"it is not dark yet":"no bed nearby")},boat:boatStore})[a]?.()});
 document.addEventListener("keyup",e=>{const k=e.key.toLowerCase();keys[k]=0;if(ARR[k])keys[KB[ARR[k]]]=0});
 cv.addEventListener("pointermove",e=>{mx=e.offsetX;my=e.offsetY});
-cv.addEventListener("pointerdown",e=>{au();mx=e.offsetX;my=e.offsetY;if(!P||P.dead||autopilot)return;if(e.button==2){rclick();return}const[tx,ty]=mtile(),x=tx|0,y=ty|0,s=P.inv[P.sel];if(dioBoss&&dioBoss.hp>0&&Math.hypot(x+.5-dioBoss.x,y+.5-dioBoss.y)<2.5){dioBoss.hp=Math.max(0,dioBoss.hp-18);tip("you struck DIO ("+dioBoss.hp+"/"+dioBoss.maxHp+")");if(dioBoss.hp<=0){["dioTheme","dioStopAudio","dioResumeAudio","dioBarrageAudio"].forEach(k=>$(k)?.pause());if(G.m)G.m.gain.value=vol.m*.4;const bar=$("dioBossBar");if(bar)bar.style.display="none";tip("DIO BRANDO has been defeated.")}return}if(s&&IT[s.i].pl){if(Math.hypot(x+.5-P.x,y+.5-P.y)<6){if(!put(P,s.i,x,y))tip("cannot place that here");uiHB()}return}ml=true});
+cv.addEventListener("pointerdown",e=>{au();mx=e.offsetX;my=e.offsetY;if(!P||P.dead||autopilot)return;if(e.button==2){rclick();return}const[tx,ty]=mtile(),x=tx|0,y=ty|0,s=P.inv[P.sel];if(dioBoss&&dioBoss.hp>0&&Math.hypot(x+.5-dioBoss.x,y+.5-dioBoss.y)<2.5){if(performance.now()<dioStopUntil){tip("DIO cannot be hit while THE WORLD is active.");return}dioBoss.hp=Math.max(0,dioBoss.hp-18);tip("you struck DIO ("+dioBoss.hp+"/"+dioBoss.maxHp+")");if(dioBoss.hp<=0){["dioTheme","dioStopAudio","dioResumeAudio","dioBarrageAudio"].forEach(k=>$(k)?.pause());if(G.m)G.m.gain.value=vol.m*.4;const bar=$("dioBossBar");if(bar)bar.style.display="none";tip("DIO BRANDO has been defeated.")}return}if(s&&IT[s.i].pl){if(Math.hypot(x+.5-P.x,y+.5-P.y)<6){if(!put(P,s.i,x,y))tip("cannot place that here");uiHB()}return}ml=true});
 addEventListener("pointerup",()=>ml=false);cv.addEventListener("contextmenu",e=>e.preventDefault());
 cv.addEventListener("wheel",e=>{e.preventDefault();if(e.ctrlKey||e.metaKey)zoom=clamp(zoom*Math.exp(-e.deltaY*.001),1,6);else{P.sel=(P.sel+(e.deltaY>0?1:7))%8;uiHB()}},{passive:false});
 document.addEventListener("contextmenu",e=>{const s=e.target.closest("[data-w]");if(s){e.preventDefault();splitSlot(s.dataset.w=="hb"?"inv":s.dataset.w,+s.dataset.j);uiNow()}});
