@@ -1,0 +1,991 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>civilization experiment</title>
+<style>
+:root{--bg:#1b1a17;--pn:#2a2722;--ln:#6b5a3a;--fg:#e6dcc0;--ac:#e0b050;box-sizing:border-box}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#d8d2c0;--pn:#efe8d4;--ln:#8a7648;--fg:#2c2518;--ac:#8a5a10}}
+:root[data-theme="light"]{--bg:#d8d2c0;--pn:#efe8d4;--ln:#8a7648;--fg:#2c2518;--ac:#8a5a10}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:12px/1.4 "Courier New",monospace;text-transform:lowercase;overflow:hidden;user-select:none}
+canvas#cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#ui{position:absolute;inset:0;pointer-events:none}#ui>*{pointer-events:auto}
+.pn{position:absolute;background:var(--pn);border:2px solid var(--ln);padding:6px;display:none;max-height:78%;overflow:auto;max-width:94%}
+.hd{margin-bottom:4px}
+#hud{position:absolute;left:6px;top:calc(6px + env(safe-area-inset-top,0px));background:var(--pn);border:2px solid var(--ln);padding:4px 6px;width:230px;opacity:.94}
+.bar{height:7px;background:#0006;border:1px solid var(--ln);margin:2px 0}.bar i{display:block;height:100%}
+#hb{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(6px + env(safe-area-inset-bottom,0px));display:flex;gap:3px}
+.sl{width:38px;height:38px;background:var(--pn);border:2px solid var(--ln);position:relative;cursor:pointer;display:inline-block;vertical-align:top;margin:1px}.sl.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac)}.sl.dim{opacity:.3}
+.sl img{width:32px;height:32px;margin:3px;image-rendering:pixelated}.sl b{position:absolute;right:2px;bottom:0;font-size:11px;text-shadow:1px 1px #000;color:#fff}.sl u{position:absolute;left:2px;top:0;font-size:9px;text-decoration:none;opacity:.7}.sl i{position:absolute;left:3px;bottom:1px;height:2px}.sl small{font-size:8px}
+.g{display:grid;grid-template-columns:repeat(8,42px);gap:0;margin:4px 0}
+#inv{left:50%;top:45%;transform:translate(-50%,-50%)}#cr{left:6px;top:130px;width:310px}#bk{left:50%;top:50%;transform:translate(-50%,-50%);width:560px;height:70%}#cl{right:6px;top:40px;width:340px}#mp{left:50%;top:50%;transform:translate(-50%,-50%)}#st{left:50%;top:50%;transform:translate(-50%,-50%);width:340px}#ch{left:50%;top:45%;transform:translate(-50%,-50%)}#pf{right:6px;top:40px;width:310px}
+.rc,.box{border-bottom:1px solid var(--ln);padding:3px 0}.rc.lk{opacity:.5}.r{cursor:pointer;padding:1px 0}.r:hover{color:var(--ac)}.ok{color:#7fcf6a}.no{color:#d26a5a}
+button,input,select{font:inherit;text-transform:lowercase;background:var(--pn);color:var(--fg);border:2px solid var(--ln);padding:1px 6px;cursor:pointer}button:hover{border-color:var(--ac)}button.on{border-color:var(--ac);color:var(--ac)}input[type=range]{padding:0}input[type=text],input:not([type]){cursor:text}
+#tt{position:absolute;left:50%;top:44px;transform:translateX(-50%);background:var(--pn);border:2px solid var(--ln);padding:2px 8px;display:none;max-width:70%;text-align:center}
+#hv{position:absolute;background:#000b;color:#fff;padding:1px 6px;display:none;pointer-events:none;white-space:nowrap}
+#hint{position:absolute;right:6px;bottom:calc(6px + env(safe-area-inset-bottom,0px));opacity:.6;max-width:210px;text-align:right}
+#mb{position:absolute;right:6px;top:calc(6px + env(safe-area-inset-top,0px))}#mm{position:absolute;left:6px;bottom:calc(6px + env(safe-area-inset-bottom,0px));border:2px solid var(--ln);width:140px;height:140px;image-rendering:pixelated}
+#end{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:520px;max-height:80%;overflow:auto;background:var(--pn);border:3px solid var(--ac);padding:12px;display:none}
+hr{border:0;border-top:1px solid var(--ln)}
+</style></head><body>
+<canvas id="cv"></canvas>
+<div id="ui">
+<div id="hud"><b>civilization experiment</b><div class="bar" title="health"><i id="hp" style="background:#c8453a"></i></div><div class="bar" title="hunger"><i id="hu" style="background:#d49a30"></i></div><div class="bar" title="warmth"><i id="tpb" style="background:#d2b84a"></i></div><div id="inf"></div></div>
+<div id="mb"><button id="pilotBtn" data-a="autopilot:0">ai play: off</button> <button data-p="inv">inventory</button> <button data-p="cr">crafting</button> <button data-p="bk">book</button> <button data-p="cl">civ</button> <button data-p="mp">map</button> <button data-p="st">settings</button></div>
+<canvas id="mm" width="140" height="140"></canvas>
+<div id="hb"></div><div id="tt"></div><div id="hv"></div>
+<div id="inv" class="pn"><div class="hd"><b>inventory</b> <input id="iq" placeholder="search items" size="12"></div><div id="invb"></div></div>
+<div id="cr" class="pn"><div class="hd"><b>crafting</b> <input id="cq" placeholder="search recipes" size="12"></div><div id="crb"></div></div>
+<div id="bk" class="pn"><div class="hd"><b>world book</b> <input id="bq" placeholder="search" size="14"></div><div id="bkb"></div></div>
+<div id="cl" class="pn"><div class="hd"><b>civilization</b> <input id="cn" placeholder="name your civilization" size="18" maxlength="18"></div><div id="clb"></div></div>
+<div id="mp" class="pn"><b>world map</b><br><canvas id="mc" width="640" height="640" style="width:min(74vmin,600px);height:min(74vmin,600px);image-rendering:pixelated;cursor:crosshair"></canvas><div id="mkb"></div></div>
+<div id="st" class="pn"><div class="hd"><b>settings</b></div>music <input type="range" id="vm" min="0" max="100" value="50"> effects <input type="range" id="vs" min="0" max="100" value="70"><br>ambience <input type="range" id="va" min="0" max="100" value="50"> ui size <input type="range" id="uis" min="0.8" max="1.5" step="0.1" value="1"><br>game speed <select id="spd"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option></select> territory colors <select id="ter"><option value="0">off</option><option value="1">light</option><option value="2">strong</option></select><br><label><input type="checkbox" id="par"> weather particles</label> <label><input type="checkbox" id="aut"> autosave</label> <label><input type="checkbox" id="ae"> auto-equip best gear</label> <button id="fs">fullscreen</button><hr><div id="stb"></div></div>
+<div id="ch" class="pn"><div class="hd"><input id="chq" placeholder="search chest" size="12"></div><div id="chb"></div></div>
+<div id="pf" class="pn"><div class="hd"><b>profile</b></div><div id="pfb"></div></div>
+
+<div id="end"></div>
+<div id="hint">wasd move · click harvest/attack · right click use/remove · e interact · f5 save · f9 load · home recenter · c i t v m</div>
+</div>
+<script>
+
+const WS=640,N=WS*WS,DAY=120,SEAS=360,YEAR=1440,LY=60,$=id=>document.getElementById(id);
+let rr=Math.random,seed=1,T,O,B,Rf,RD,TO,TD,TC,KN,H={},F={},CH={},CN={},CO={},CA={},STR=[],SU=[],TR=[],ISL=[],WF=new Set(),FARMS=new Set(),actors=[],animals=[],drops=[],boats=[],projs=[],civs=[],claims=[],pend=[],invs=[],TALK=[],EV=[],CL=[],LIN=[],P,time=0,zoom=2.6,cam={x:0,y:0},paused=false,gspd=1,ST={built:0,dug:0,disc:0,kills:0,crafted:0,sailed:0,wars:0},WX={t:"clear",i:0,nx:60,fl:0},R2=Math.random,MARKS=[];
+const mb=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const hs=(x,y,s)=>{let h=Math.imul(x*374761393+y*668265263+s*1442695041,1274126177);h=Math.imul(h^h>>>13,1103515245);return((h^h>>>16)>>>0)/4294967296};
+function vn(x,y,s){const xi=Math.floor(x),yi=Math.floor(y),fx=x-xi,fy=y-yi,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),a=hs(xi,yi,s),b=hs(xi+1,yi,s),c=hs(xi,yi+1,s),d=hs(xi+1,yi+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
+function fbm(x,y,s,o=4){let r=0,a=.5,f=1,t=0;for(let i=0;i<o;i++){r+=a*vn(x*f,y*f,s+i*7);t+=a;a/=2;f*=2}return r/t}
+const SY="ka ro mi sa tel von dar el an ur bel tha nor ki lu mar os vi zen ha".split(" "),pick=a=>a[rr()*a.length|0],pick2=a=>a[R2()*a.length|0],clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const nm=()=>{let s="";for(let i=0;i<2+(rr()<.4);i++)s+=pick(SY);return s},sn=()=>nm()+pick(["son","ar","wick","ford","dal","ren"]);
+const wr=(x,y)=>x>=0&&y>=0&&x<WS&&y<WS,li=(x,y)=>y*WS+x,land=t=>t==2||t==3||t==4||t==5||t==7||t==8;
+// ---- items ----
+const IT={},RC={},PB={floor:1,wall:2,door:3,campfire:10,workbench:11,chest:12,furnace:13,farm:14,workbench2:19,anvil:20,cookstation:21,bed:22,stonewall:23,catapult:24,battering_ram:25,siege_tower:26,gate:27,castlewall:28},BI={},BS={raft:{sp:2.8,du:40,cap:0},raft2:{sp:3.4,du:90,cap:8},sailboat:{sp:5,du:150,cap:16},ship:{sp:5.6,du:280,cap:24}};
+for(const k in PB)BI[PB[k]]=k;
+const SOLB=new Set([2,10,11,12,13,15,19,20,21,23,24,25,26,27,28]),RAR={c:"#9a9a9a",u:"#5fcf5f",r:"#4aa8ff",e:"#b06aff"},RNAME={c:"common",u:"uncommon",r:"rare",e:"epic"};
+function it(id,n,cat,c,o){IT[id]=Object.assign({n,cat,c},o||{})}
+const M=(id,n,c,o)=>it(id,n,"material",c,o),FD=(id,n,c,f)=>it(id,n,"food",c,{f}),TL=(id,n,k,t,c,du,r)=>it(id,n,"tool",c,{tool:k,tier:t,du,r}),WP=(id,n,dm,du,c,o)=>it(id,n,"weapon",c,Object.assign({dm,du,tool:"sword"},o)),AR=(id,n,ar,wm,du,c,r)=>it(id,n,"armor",c,{slot:"armor",ar,wm,du,r}),PL=(id,n,c,o)=>it(id,n,"building",c,Object.assign({pl:1},o));
+M("wood","wood","#a9773f");M("stone","stone","#8d8d93");M("iron_ore","iron ore","#d49a4a");M("iron","iron ingot","#cfd3d8");M("gold","gold","#f0c030",{r:"u"});M("crystal","crystal","#7fe0f0",{r:"r"});M("relic","ancient relic","#c8a0ff",{r:"e"});M("leather","leather","#8a5a3a");M("cloth","cloth","#e0d6c0");
+FD("berries","berries","#d23b4a",16);FD("meat","raw meat","#c4605a",26);FD("wheat","wheat","#e0c050",14);FD("cooked","cooked meat","#8a4a2a",40);FD("bread","bread","#d8a860",32);FD("fish","raw fish","#79a9c9",22);FD("cooked_fish","cooked fish","#c18a55",38);
+TL("axe_w","wooden axe","axe",1,"#a9773f",40);TL("axe_s","stone axe","axe",2,"#8d8d93",80);TL("axe_i","iron axe","axe",3,"#cfd3d8",160,"u");TL("pick_w","wooden pickaxe","pick",1,"#a9773f",40);TL("pick_s","stone pickaxe","pick",2,"#8d8d93",80);TL("pick_i","iron pickaxe","pick",3,"#cfd3d8",160,"u");TL("pick_c","crystal pickaxe","pick",4,"#7fe0f0",300,"r");TL("shovel","shovel","shovel",1,"#8d8d93",60);
+WP("sword_w","wooden sword",12,50,"#a9773f",{tier:1});WP("sword_s","stone sword",18,90,"#8d8d93",{tier:2});WP("sword_i","iron sword",28,180,"#dfe3e8",{tier:3,r:"u"});WP("spear","spear",15,70,"#b89860",{tier:1,tool:"spear",reach:3.4});WP("ancient_blade","ancient blade",40,400,"#c8a0ff",{tier:4,r:"e"});WP("bow","bow",14,120,"#a9773f",{tool:"bow",ranged:1});it("arrow","arrow","weapon","#ddd",{});
+AR("clothes","clothes",1,10,100,"#c8b898");AR("leather_armor","leather armor",3,18,160,"#8a5a3a","u");AR("chain_armor","chain armor",5,6,240,"#aab0b8","u");AR("iron_armor","iron armor",8,4,320,"#cfd3d8","r");
+it("wood_shield","wooden shield","armor","#a9773f",{slot:"shield",bl:.3,du:80});it("iron_shield","iron shield","armor","#cfd3d8",{slot:"shield",bl:.5,du:200,r:"u"});
+for(const[id,n,c,r]of[["compass","compass","#caa44a"],["map","map","#e8dcb0"],["map2","improved map","#f0e4a8","u"],["tmap","treasure map","#e0c070","r"],["journal","journal","#a89070","u"],["scroll","ancient scroll","#d8c8f0","r"]])it(id,n,"misc",c,{stack:1,r});
+for(const[id,n,c]of[["floor","floor planks","#a9773f"],["wall","wall","#6e4a26"],["door","door","#5b3b1d"],["roof","roof","#9a3b2c"],["campfire","campfire","#e8742a"],["workbench","workbench","#8a6034"],["workbench2","improved workbench","#aab"],["furnace","furnace","#6f6f74"],["anvil","anvil","#4a4a50"],["cookstation","cooking station","#8a5a3a"],["chest","chest","#7a5128"],["bed","bed","#c04a4a"],["farm","farm plot","#6b4a2a"],["stonewall","stone wall","#8a8a90"],["catapult","catapult","#8a7048"],["battering_ram","battering ram","#8a6034"],["siege_tower","siege tower","#9a7048"],["gate","reinforced gate","#6e4a26"],["castlewall","castle wall","#85858d"],["house","house kit","#cdb88a"]])PL(id,n,c);
+for(const k in BS)PL(k,{raft:"raft",raft2:"improved raft",sailboat:"sailboat",ship:"ship"}[k],"#a9773f",{boat:1});
+function rc(id,cat,inn,o){RC[id]=Object.assign({n:IT[id].n,cat,in:inn,o:1,d:""},o||{})}
+rc("axe_w","tools",{wood:3},{d:"chops trees much faster than bare hands"});rc("pick_w","tools",{wood:4},{d:"mines rock and stone walls"});rc("workbench","stations",{wood:6},{d:"unlocks tools, weapons, armor, maps and more"});rc("campfire","stations",{wood:3,stone:2},{d:"warmth, light and safety at night"});rc("raft","boats",{wood:12},{d:"a basic raft. place it on water, press e to board"});
+rc("floor","building",{wood:2},{o:4,d:"wooden floor planks"});rc("wall","building",{wood:3},{o:2,d:"solid wooden wall"});rc("door","building",{wood:3},{d:"passable door, can replace a wall segment"});rc("roof","building",{wood:3},{o:4,d:"keeps you warm and dry indoors"});
+rc("axe_s","tools",{wood:2,stone:3},{st:11,req:["axe_w"],d:"a better axe"});rc("pick_s","tools",{wood:2,stone:3},{st:11,req:["pick_w"],d:"mines iron ore"});rc("shovel","tools",{wood:2,stone:2},{st:11,req:["workbench"],d:"digs up buried treasure"});
+rc("sword_w","weapons",{wood:5},{st:11,req:["workbench"],d:"basic melee weapon"});rc("sword_s","weapons",{wood:2,stone:4},{st:11,req:["sword_w"],d:"sturdy stone blade"});rc("spear","weapons",{wood:3,stone:2},{st:11,req:["workbench"],d:"long reach melee weapon"});rc("bow","weapons",{wood:4,cloth:2},{st:11,req:["cloth"],d:"ranged weapon, needs arrows"});rc("arrow","weapons",{wood:1,stone:1},{o:4,st:11,req:["workbench"],d:"ammunition for bows"});
+rc("wood_shield","armor",{wood:6},{st:11,req:["workbench"],d:"blocks some damage when equipped"});rc("cloth","misc",{wheat:3},{st:11,req:["workbench"],d:"woven fibre for clothing, sails and maps"});rc("clothes","armor",{cloth:4},{st:11,req:["cloth"],d:"keeps you a little warmer"});rc("leather_armor","armor",{leather:6,cloth:2},{st:11,req:["clothes"],d:"good protection and warmth"});
+rc("chest","building",{wood:8},{st:11,req:["workbench"],d:"storage you can open, name and share"});rc("house","building",{wood:20,stone:8},{st:11,req:["workbench","pick_s"],d:"places a roofed house. press r to rotate"});rc("farm","building",{wood:3,berries:2},{st:11,req:["workbench","axe_s"],d:"grows wheat, faster in rain and spring"});rc("bed","building",{wood:6,cloth:3},{st:11,req:["cloth"],d:"sleep safely through the night"});rc("stonewall","building",{stone:4},{o:2,st:11,req:["pick_s"],d:"tough defensive wall"});
+rc("gate","building",{wood:12,iron:3},{st:20,req:["anvil","stonewall"],d:"reinforced gate for a fortified entrance"});
+rc("castlewall","building",{stone:8,iron:1},{st:20,req:["anvil","stonewall"],d:"heavy castle wall that takes sustained siege damage"});
+rc("catapult","building",{wood:28,stone:18,iron:5},{st:20,req:["anvil","workbench2"],d:"long-range siege engine that hurls stones at enemy soldiers and fortifications"});
+rc("battering_ram","building",{wood:24,iron:4,leather:4},{st:20,req:["anvil","stonewall"],d:"heavy ram that breaks gates and walls at close range"});
+rc("siege_tower","building",{wood:36,stone:8,iron:4},{st:20,req:["anvil","workbench2"],d:"armored assault tower that supports nearby attackers"});
+rc("furnace","stations",{stone:10},{st:11,req:["pick_s"],d:"smelts iron ore into ingots"});rc("cookstation","stations",{stone:8,wood:4},{st:11,req:["pick_s"],d:"cook meat and bake bread"});rc("map","misc",{wheat:3,wood:1},{st:11,req:["workbench"],d:"widens your view, opens the world map and lets you place markers"});rc("raft2","boats",{wood:20,cloth:2},{st:11,req:["raft","cloth"],d:"sturdier raft with storage"});
+rc("iron","misc",{iron_ore:2,wood:1},{st:13,req:["furnace"],d:"smelted iron"});rc("cooked","food",{meat:1},{st:21,req:["cookstation"],d:"restores far more hunger"});rc("bread","food",{wheat:2},{st:21,req:["cookstation"],d:"filling baked bread"});
+rc("compass","misc",{iron:1,stone:2},{st:11,req:["iron"],d:"always points north and shows coordinates"});rc("anvil","stations",{iron:6,stone:6},{st:11,req:["iron"],d:"forge iron tools, weapons and armor"});rc("workbench2","stations",{iron:3,wood:10},{st:11,req:["iron"],d:"improved workbench for advanced recipes"});
+rc("sword_i","weapons",{iron:3,wood:1},{st:20,req:["anvil","sword_s"],d:"strong iron blade"});rc("axe_i","tools",{iron:3,wood:2},{st:20,req:["anvil","axe_s"],d:"iron axe"});rc("pick_i","tools",{iron:3,wood:2},{st:20,req:["anvil","pick_s"],d:"iron pickaxe"});rc("iron_shield","armor",{iron:4,wood:2},{st:20,req:["anvil","wood_shield"],d:"heavy shield"});rc("chain_armor","armor",{iron:4,leather:4},{st:20,req:["anvil","leather_armor"],d:"improved armor"});rc("iron_armor","armor",{iron:8},{st:20,req:["anvil","chain_armor"],d:"metal armor"});
+rc("map2","misc",{map:1,cloth:2,iron:1},{st:19,req:["workbench2","map"],d:"improved map: wide view, shows territories and structures"});rc("tmap","misc",{map:1,gold:3},{st:19,req:["workbench2"],d:"treasure map marking a buried treasure"});rc("sailboat","boats",{wood:30,cloth:8,iron:2},{st:19,req:["workbench2","raft2"],d:"fast sailboat with storage"});rc("ship","boats",{wood:60,cloth:16,iron:10},{st:19,req:["workbench2","sailboat"],d:"large ship with big storage"});
+rc("pick_c","tools",{crystal:3,iron:2},{st:20,req:["anvil","pick_i"],lock:"scroll",d:"mines crystals. an ancient scroll teaches this recipe"});
+for(const k in RC)IT[k].d=RC[k].d;IT.house.d=RC.house.d;
+const stk=id=>IT[id].stack||(IT[id].du?1:IT[id].pl?20:64),SHIRTS=["#e8e8e8","#c8a878","#7a5a3a","#3a3a44","#5a8aa8","#a8a85a","#8a5a8a"];
+const CATS=["basics","tools","weapons","armor","building","stations","boats","food","misc"];
+
+// ---------- sprites ----------
+const R=(c,x,y,w,h)=>[c,x,y,w,h],wallB=[R("#69696e",0,0,16,16),R("#7d7d82",0,0,16,5),R("#555",0,8,16,1)],bush=[R("#2f7a35",2,6,12,8),R("#41973f",3,6,6,4)];
+const SD={tree:[R("#5b3b1d",7,9,3,6),R("#2c6a30",2,1,12,9),R("#3f8c3c",4,2,6,5)],rock:[R("#7d7d82",3,7,10,7),R("#a0a0a6",4,7,5,3),R("#5e5e63",3,12,10,2)],bush:[...bush,R("#d23b4a",5,9,2,2),R("#d23b4a",10,8,2,2),R("#d23b4a",8,11,2,2)],bush0:bush,ore:[...wallB,R("#d49a4a",4,4,2,2),R("#d49a4a",9,8,3,2),R("#d49a4a",5,11,2,2)],
+floor:[R("#a9773f",0,0,16,16),R("#8b5f2f",0,5,16,1),R("#8b5f2f",0,10,16,1),R("#8b5f2f",8,0,1,5)],wall:[R("#6e4a26",0,0,16,16),R("#8a6034",0,1,16,6),R("#8a6034",0,9,16,6),R("#4d3319",0,7,16,1),R("#4d3319",0,15,16,1)],door:[R("#a9773f",0,0,16,16),R("#5b3b1d",3,1,10,14),R("#e0b050",10,8,2,2)],roof:[R("#9a3b2c",0,0,16,16),R("#7a2c20",0,3,16,1),R("#7a2c20",0,7,16,1),R("#7a2c20",0,11,16,1),R("#7a2c20",0,15,16,1)],
+campfire:[R("#5b3b1d",3,11,10,3),R("#e8742a",5,5,6,7),R("#f5c542",7,7,2,4)],campfire2:[R("#5b3b1d",3,11,10,3),R("#e8742a",4,6,8,6),R("#f5c542",6,5,3,6)],workbench:[R("#6e4a26",1,6,14,4),R("#8a6034",1,5,14,2),R("#4d3319",2,10,2,5),R("#4d3319",12,10,2,5),R("#aaa",10,3,3,2)],chest:[R("#7a5128",2,5,12,9),R("#9b6b36",2,5,12,3),R("#e0b050",7,8,2,3)],furnace:[R("#6f6f74",1,2,14,13),R("#4a4a4f",4,7,8,6),R("#e8742a",5,9,6,3),R("#2d2d30",4,2,8,2)],raft:[R("#5b3b1d",0,0,16,16),R("#a9773f",1,1,14,4),R("#a9773f",1,6,14,4),R("#a9773f",1,11,14,4)]};
+for(let s=0;s<3;s++)SD["farm"+s]=[R("#6b4a2a",0,0,16,16),R("#563a20",0,4,16,1),R("#563a20",0,9,16,1),...(s?[3,7,11].flatMap(x=>[R(s>1?"#e0c050":"#6bbf4a",x,2,2,s*3),R(s>1?"#e0c050":"#6bbf4a",x,7,2,s*3),R(s>1?"#e0c050":"#6bbf4a",x,12,2,s*3)]):[])];
+const SPR={},TV=[],mk=()=>{const c=document.createElement("canvas");c.width=c.height=16;return c};
+for(const k in SD){const c=mk(),x=c.getContext("2d");for(const[col,a,b,w,h]of SD[k]){x.fillStyle=col;x.fillRect(a,b,w,h)}SPR[k]=c}
+const PAL=[[26,58,110],[60,120,175],[218,200,140],[88,150,64],[236,240,246],[226,196,120],[105,105,110],[58,54,60],[74,104,70]];
+for(let t=0;t<9;t++){if(!PAL[t])continue;TV[t]=[];for(let v=0;v<3;v++){const c=mk(),x=c.getContext("2d");for(let py=0;py<16;py++)for(let px=0;px<16;px++){const h=hs(px+v*16,py+t*50,7),k=(h-.5)*22+(t==6&&py<3?14:0);x.fillStyle=`rgb(${PAL[t].map(q=>q+k|0)})`;x.fillRect(px,py,1,1);if(t==3&&h>.93){x.fillStyle="#74b556";x.fillRect(px,py,1,2)}}TV[t].push(c)}}
+
+
+// ---- extra sprites ----
+function mkS(n,rects){const c=mk(),x=c.getContext("2d");for(const[col,a,b,w,h]of rects){x.fillStyle=col;x.fillRect(a,b,w,h)}SPR[n]=c}
+const rec=(arr,m)=>arr.map(r=>[m[r[0]]||r[0],...r.slice(1)]);
+mkS("tree_a",rec(SD.tree,{"#2c6a30":"#b8641e","#3f8c3c":"#d8882a"}));mkS("tree_w",rec(SD.tree,{"#2c6a30":"#bccdd6","#3f8c3c":"#e8f2f8"}));
+mkS("tent",[R("#c8a878",3,6,10,9),R("#a88858",7,2,2,5),R("#8a6a3a",6,9,4,6),R("#e8d8b0",4,7,3,4)]);
+mkS("ruinwall",[R("#7a7a70",0,0,16,16),R("#5e5e55",0,5,16,1),R("#5e5e55",0,11,16,1),R("#8c8c80",2,1,5,3),R("#4a4a42",9,7,4,3),R("#5a7a4a",10,0,4,2)]);
+mkS("ruinfloor",[R("#6a6a62",0,0,16,16),R("#5a5a52",0,7,16,1),R("#5a5a52",7,0,1,16),R("#74746c",2,2,4,3)]);
+mkS("crystal",[R("#2a3a5a",3,10,10,5),R("#7fe0f0",6,2,4,10),R("#a8f0ff",7,2,2,6),R("#5fc0e0",3,6,3,6),R("#5fc0e0",10,7,3,5)]);
+mkS("ancient",[R("#4a3018",6,8,5,8),R("#1f5a2a",0,0,16,10),R("#2f8038",2,1,12,7),R("#4aa048",4,2,5,3),R("#d8c060",3,4,2,2)]);
+mkS("bed",[R("#6e4a26",1,4,14,10),R("#d8d0c0",2,5,12,5),R("#c04a4a",2,9,12,4),R("#fff",2,5,4,3)]);
+mkS("workbench2",[...SD.workbench,R("#aaa",3,2,10,3),R("#d0d4d8",2,3,12,1)]);
+mkS("anvil",[R("#4a4a50",3,6,10,4),R("#6a6a72",2,5,12,2),R("#4a4a50",5,10,6,3),R("#3a3a40",4,13,8,2)]);
+mkS("cookstation",[R("#6f6f74",1,6,14,9),R("#e8742a",3,3,4,4),R("#3a3a3a",9,3,4,3),R("#f5c542",4,2,2,3)]);
+mkS("stonewall",[R("#8a8a90",0,0,16,16),R("#6a6a70",0,5,16,1),R("#6a6a70",0,11,16,1),R("#a0a0a6",1,1,6,3),R("#a0a0a6",9,7,6,3)]);
+mkS("catapult",[R("#5b3b1d",2,10,12,4),R("#a9773f",3,8,10,3),R("#6e4a26",7,1,2,10),R("#c8a878",8,1,6,2),R("#4a3018",5,13,2,3),R("#4a3018",10,13,2,3)]);
+mkS("battering_ram",[R("#5b3b1d",1,5,14,8),R("#a9773f",2,6,12,5),R("#6e6e72",5,3,6,3),R("#6e6e72",7,1,2,4),R("#4a3018",3,13,3,2),R("#4a3018",10,13,3,2)]);
+mkS("siege_tower",[R("#5b3b1d",2,1,12,14),R("#a9773f",4,3,8,11),R("#6e4a26",1,0,14,3),R("#4a3018",5,5,6,2),R("#4a3018",5,9,6,2)]);
+mkS("gate",[R("#6e4a26",1,0,14,16),R("#a9773f",3,1,2,14),R("#a9773f",7,1,2,14),R("#a9773f",11,1,2,14),R("#d0b070",2,6,12,2)]);
+mkS("castlewall",[R("#85858d",0,0,16,16),R("#a0a0a6",0,1,4,4),R("#a0a0a6",6,1,4,4),R("#a0a0a6",12,1,4,4),R("#66666d",0,7,16,2),R("#686870",0,13,16,2)]);
+mkS("raft2",[R("#5b3b1d",0,0,16,16),R("#b88a50",1,1,14,3),R("#b88a50",1,5,14,3),R("#b88a50",1,9,14,3),R("#b88a50",1,13,14,2),R("#d8d0c0",6,2,4,6)]);
+mkS("sailboat",[R("#5b3b1d",1,10,14,5),R("#7a5128",2,11,12,3),R("#5b3b1d",7,1,2,11),R("#f0ead8",8,2,6,8),R("#d8cfb8",8,5,6,1)]);
+mkS("ship",[R("#3a2a1a",0,9,16,6),R("#5b3b1d",1,10,14,4),R("#4a3018",7,0,2,11),R("#e8e0cc",9,1,6,5),R("#e8e0cc",2,3,5,6),R("#c04a4a",15,0,1,3)]);
+mkS("fall",[R("#bfe4f8",0,0,16,16),R("#fff",2,0,2,16),R("#fff",7,0,2,16),R("#8cc8ee",11,0,2,16),R("#fff",13,6,3,5)]);
+{const c=mk(),x=c.getContext("2d");for(let py=0;py<16;py++)for(let px=0;px<16;px++){const h=hs(px,py,31);x.fillStyle=`rgb(${150+h*20|0},${114+h*18|0},${74+h*14|0})`;x.fillRect(px,py,1,1)}SPR.road=c}
+function icon(id){const d=IT[id],c=mk(),x=c.getContext("2d"),f=(col,a,b,w,h)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
+if(SPR[id]&&d.pl){x.drawImage(SPR[id],0,0,16,16);return c.toDataURL()}
+if(id=="house"){x.drawImage(SPR.roof,0,0,16,6);x.drawImage(SPR.wall,0,6,16,10)}
+else if(id=="compass"){f("#caa44a",3,3,10,10);f("#1d1d1d",4,4,8,8);f("#d23b4a",7,4,2,5);f("#fff",7,9,2,3)}
+else if(id=="map"||id=="map2"||id=="tmap"){f(d.c,2,3,12,10);f("#6a8f4a",4,5,4,3);f(id=="tmap"?"#d23b4a":"#6a7fa0",10,9,2,2);if(id=="map2")f("#444",2,3,12,1)}
+else if(id=="journal"){f("#6a4a2a",3,2,10,12);f("#e8dcb0",4,3,8,10);f("#888",5,5,6,1);f("#888",5,8,6,1)}
+else if(id=="scroll"){f("#d8c8f0",3,4,10,8);f("#8a6ac0",2,3,2,10);f("#8a6ac0",12,3,2,10);f("#555",5,6,6,1)}
+else if(id=="arrow"){for(let i=0;i<10;i++)f("#ddd",3+i,12-i,1,1);f("#a9773f",2,13,2,1);f("#999",12,3,2,2)}
+else if(id=="bow"){f("#a9773f",9,2,2,2);f("#a9773f",11,4,2,8);f("#a9773f",9,12,2,2);f("#ddd",9,3,1,10)}
+else if(d.slot=="shield"){f(d.c,3,3,10,11);f("#0004",3,12,10,2);f("#fff3",4,4,3,6)}
+else if(d.slot=="armor"){f(d.c,3,3,10,10);f("#0003",3,3,3,4);f("#0003",10,3,3,4);f("#fff3",6,5,4,2)}
+else if(d.tool=="sword"){f("#5b3b1d",3,12,3,2);for(let i=0;i<9;i++)f(d.c,5+i,10-i,2,2);f("#5b3b1d",4,10,5,2)}
+else if(d.tool=="spear"){f("#a9773f",3,13,9,1);for(let i=0;i<10;i++)f("#a9773f",3+i,13-i,2,2);f("#ddd",12,2,3,3)}
+else if(d.cat=="tool"){f("#5b3b1d",1,1,1,1);for(let i=0;i<11;i++)f("#5b3b1d",3+i,13-i,2,2);if(d.tool=="axe")f(d.c,9,2,5,5);else if(d.tool=="shovel")f(d.c,10,1,4,5);else{f(d.c,5,2,9,2);f(d.c,12,3,2,4)}}
+else if(d.cat=="food"){f(d.c,4,4,8,8);f(d.c,3,6,10,4);f("#fff5",5,5,2,2)}
+else{f(d.c,3,5,10,8);f("#fff4",3,5,10,2);f("#0004",3,12,10,1)}
+return c.toDataURL()}
+const IC={},IM={};for(const k in IT){IC[k]=icon(k);const im=new Image();im.src=IC[k];IM[k]=im}
+// ---- audio ----
+let AC,G={},NB,WG,WT,RG,nm_=0;const vol={m:.5,s:.7,a:.5},lt={};
+function setVol(){if(!AC)return;G.m.gain.value=vol.m*.4;G.s.gain.value=vol.s;G.a.gain.value=vol.a}
+function au(){if(AC){AC.resume();return}try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return}for(const k of"msa"){G[k]=AC.createGain();G[k].connect(AC.destination)}setVol();NB=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=rr()*2-1;
+const lp=(f,t)=>{const s=AC.createBufferSource();s.buffer=NB;s.loop=true;const fl=AC.createBiquadFilter();fl.type=t;fl.frequency.value=f;const g=AC.createGain();g.gain.value=0;s.connect(fl);fl.connect(g);g.connect(G.a);s.start();return g};WG=lp(500,"bandpass");WT=lp(900,"lowpass");RG=lp(3200,"highpass")}
+function burst(f,q,d,g,o){if(!AC)return;o=o||G.s;const t=AC.currentTime,s=AC.createBufferSource();s.buffer=NB;const fl=AC.createBiquadFilter();fl.type="bandpass";fl.frequency.value=f;fl.Q.value=q;const n=AC.createGain();n.gain.setValueAtTime(g,t);n.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(fl);fl.connect(n);n.connect(o);s.start(t,rr(),d+.05)}
+function tone(f,d,ty,g,sl,dl,o){if(!AC)return;o=o||G.s;sl=sl||0;dl=dl||0;const t=AC.currentTime+dl,c=AC.createOscillator(),n=AC.createGain();c.type=ty;c.frequency.setValueAtTime(f,t);c.frequency.linearRampToValueAtTime(Math.max(20,f+sl),t+d);n.gain.setValueAtTime(g,t);n.gain.exponentialRampToValueAtTime(.001,t+d);c.connect(n);n.connect(o);c.start(t);c.stop(t+d+.02)}
+function snd(n,a){if(!AC||!P)return;const now=performance.now();if(lt[n]&&now-lt[n]<(n=="step"?90:60))return;lt[n]=now;const d=a&&a!==P?Math.hypot(a.x-P.x,a.y-P.y):0,v=Math.max(0,1-d/14);if(v<=0)return;
+({chop:()=>{burst(300,1,.12,.7*v);tone(110,.1,"square",.15*v,-40)},mine:()=>{burst(2500,3,.06,.5*v);tone(700,.05,"square",.08*v)},pick:()=>{tone(660,.08,"square",.1*v);tone(880,.08,"square",.1*v,0,.06)},craft:()=>[440,554,659].forEach((f,i)=>tone(f,.12,"triangle",.2*v,0,i*.09)),place:()=>{tone(90,.14,"sine",.6*v,-30);burst(200,1,.1,.3*v)},ui:()=>tone(520,.04,"square",.08),eat:()=>burst(900,2,.09,.4*v),hurt:()=>{tone(140,.2,"sawtooth",.2*v,-60);burst(1800,2,.05,.3*v)},shoot:()=>{burst(2200,3,.08,.3*v);tone(300,.1,"triangle",.1*v,-150)},thunder:()=>{burst(120,.5,1.6,.9)},break:()=>{burst(600,1,.2,.5*v);tone(80,.2,"square",.2*v,-30)},splash:()=>burst(1400,.6,.16,.3*v),
+step:()=>{const t=T[(a.y|0)*WS+(a.x|0)];if(t<=1)burst(1500,.6,.14,.25*v);else if(t==2||t==5)burst(1200,.5,.06,.15*v);else if(t==4)burst(2400,.8,.07,.15*v);else if(t>=6)tone(180,.04,"triangle",.2*v);else burst(500,.8,.05,.18*v)}})[n]?.()}
+
+// ---- world generation ----
+function lore(){const a=nm(),b=nm();return pick2([`the kingdom of ${a} fell in the war against ${b}. its treasure lies sealed in the old halls.`,`${a} the builder raised these walls before the great winter. none returned.`,`we buried the gold of ${a} where the sea meets the sand. look for the lonely isle of ${b}.`,`the ${a} people left this place after the plague. the stores were never emptied.`,`beware ${b}'s tomb. the ancient blade sleeps beneath the stone.`])}
+function loot(tier){const L=[],r=R2;L.push(["gold",2+r()*6*tier|0]);if(r()<.6)L.push(["iron",1+r()*3*tier|0]);if(r()<.22*tier)L.push(["crystal",1+r()*2|0]);if(r()<.5)L.push(["arrow",4+r()*10|0]);if(r()<.16*tier)L.push(["relic",1]);if(r()<.25)L.push(["map",1]);if(r()<.18&&TR.length)L.push(["tmap",1,r()*TR.length|0]);if(r()<.3)L.push(["scroll",1]);if(r()<.4)L.push(["journal",1,lore()]);if(r()<.2*tier)L.push([pick2(["sword_s","sword_i","spear","bow","leather_armor","wood_shield","chain_armor"]),1]);if(tier>=3&&r()<.35)L.push(["ancient_blade",1]);if(r()<.4)L.push(["cooked",2]);return L}
+function chestAt(x,y,items,name){const i=li(x,y);B[i]=12;O[i]=0;CH[i]=Array(32).fill(null);const o={inv:CH[i],seen:new Set()};for(const[id,n,m]of items)add(o,id,n,m);CO[i]=-1;CA[i]="s";if(name)CN[i]=name;STR.push({t:12,x,y})}
+function rect(x,y,w,h,o){o=o||{};const g=o.gap||0;for(let j=0;j<h;j++)for(let i=0;i<w;i++){const e=i==0||j==0||i==w-1||j==h-1,px=x+i,py=y+j;if(!wr(px,py))continue;const k=li(px,py);if(T[k]<=1&&!o.water)continue;O[k]=0;if(e)B[k]=R2()<g?0:15;else if(o.fl!==0)B[k]=16}
+if(o.door!==false&&wr(x+(w>>1),y+h-1)){const k=li(x+(w>>1),y+h-1);if(T[k]>1||o.water)B[k]=16}
+for(let n=0;n<(o.ch||0);n++){const cx=x+1+(R2()*Math.max(1,w-2)|0),cy=y+1+(R2()*Math.max(1,h-2)|0);if(wr(cx,cy)&&B[li(cx,cy)]!=12)chestAt(cx,cy,loot(o.tier||1))}}
+function sB(x,y,b){if(wr(x,y)){const k=li(x,y);if(T[k]>1){B[k]=b;O[k]=0}}}
+function flat(x,y,w,h){for(const[dx,dy]of[[0,0],[w-1,0],[0,h-1],[w-1,h-1],[w>>1,h>>1]]){const t=T[li(x+dx,y+dy)];if(t<2||t==6||t==7)return false}for(let j=0;j<h;j++)for(let i=0;i<w;i++){const k=li(x+i,y+j);if(B[k]||T[k]<2||T[k]==6||O[k]==7)return false}return true}
+function site(w,h,ok,tries){for(let a=0;a<(tries||400);a++){const x=24+R2()*(WS-48-w)|0,y=24+R2()*(WS-48-h)|0;if(ok(x,y))return[x,y]}return null}
+function reg(k,cat,names,x,y,w,h,rec){SU.push({id:SU.length,k,cat,name:pick2(names),x:x+(w>>1),y:y+(h>>1),w,h,disc:0,rec:!!rec,own:-1})}
+function nearT(x,y,t,r){for(let dy=-r;dy<=r;dy+=2)for(let dx=-r;dx<=r;dx+=2)if(wr(x+dx,y+dy)&&T[li(x+dx,y+dy)]==t)return true;return false}
+function pocket(cx,cy,r,o){for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const d=Math.hypot(dx,dy),x=cx+dx,y=cy+dy;if(!wr(x,y)||d>r+R2()*.8)continue;const k=li(x,y);if(T[k]==6||T[k]==7){T[k]=7;O[k]=0;if(R2()<o.cr)O[k]=6;else if(R2()<o.pil)T[k]=6}}
+let x=cx,y=cy+r;for(let s=0;s<22;s++){y++;if(!wr(x,y))break;const k=li(x,y);if(T[k]!=6&&T[k]!=7)break;T[k]=7;O[k]=0}}
+function genStructs(){const L=[
+["temple","ancient",["the sunken temple","the forgotten temple","temple of the first kings"],5,11,9,(x,y)=>{rect(x,y,11,9,{gap:.12,ch:2,tier:3});for(const[a,b]of[[2,2],[8,2],[2,6],[8,6]])sB(x+a,y+b,15)}],
+["castle","ancient",["the forgotten castle","castle of the lost king","the grey keep"],4,15,13,(x,y)=>{rect(x,y,15,13,{gap:.3,ch:2,tier:3});rect(x+5,y+4,5,4,{gap:.1,ch:1,tier:3});for(const[a,b]of[[0,0],[14,0],[0,12],[14,12]])sB(x+a,y+b,15)}],
+["library","ancient",["the ancient library","the silent archive","hall of records"],3,9,7,(x,y)=>{rect(x,y,9,7,{gap:.1,ch:2,tier:2});chestAt(x+4,y+3,[["journal",2,lore()],["scroll",1],["map",1],["tmap",1,R2()*Math.max(1,TR.length)|0]],"records")}],
+["tomb","ancient",["the royal tomb","tomb of the sleeping king","the buried vault"],5,7,7,(x,y)=>{rect(x,y,7,7,{ch:1,tier:3});chestAt(x+3,y+3,[["ancient_blade",1],["relic",1],["gold",12]],"royal tomb")}],
+["circle","ancient",["the stone circle","ring of the old ones"],5,9,9,(x,y)=>{for(let a=0;a<8;a++)sB(x+4+Math.round(Math.cos(a*.785)*4),y+4+Math.round(Math.sin(a*.785)*4),15);O[li(x+4,y+4)]=6;chestAt(x+3,y+4,loot(1))}],
+["monument","ancient",["the ancient monument","the weathered obelisk"],4,5,5,(x,y)=>{for(let i=0;i<5;i++){sB(x+2,y+i,15);sB(x+i,y+2,15)}chestAt(x+1,y+1,loot(2))}],
+["village","abandoned",["the abandoned village","the empty hamlet","old oakhaven"],5,16,12,(x,y)=>{for(const[a,b]of[[0,0],[8,1],[1,7],[9,7]])rect(x+a,y+b,5,4,{gap:.2,ch:R2()<.6?1:0,tier:1})},1],
+["mining","abandoned",["the abandoned mining town","the dead mine camp"],4,12,8,(x,y)=>{for(const[a,b]of[[0,0],[6,1],[3,5]])rect(x+a,y+b,5,4,{gap:.2,ch:1,tier:1});chestAt(x+11,y+7,[["iron",4],["iron_ore",6],["pick_s",1]],"ore stores")},1],
+["fortress","abandoned",["the ruined fortress","broken bastion"],4,13,11,(x,y)=>{rect(x,y,13,11,{gap:.25,ch:2,tier:2});rect(x+4,y+3,5,4,{gap:.1,ch:1,tier:2})},1],
+["tower","abandoned",["the abandoned watchtower","the crooked tower"],8,3,3,(x,y)=>{rect(x,y,3,3,{gap:.1,ch:1,tier:1})},1],
+["farmstead","abandoned",["the abandoned farm","the fallow farmstead"],6,10,6,(x,y)=>{rect(x,y,4,4,{gap:.15,ch:1,tier:1});for(let j=0;j<3;j++)for(let i=0;i<4;i++){const k=li(x+5+i,y+1+j);if(T[k]==3||T[k]==2){B[k]=14;F[k]=40;FARMS.add(k)}}},1],
+["battlefield","abandoned",["the old battlefield","field of broken swords"],5,14,10,(x,y)=>{for(let n=0;n<16;n++){const px=x+R2()*14|0,py=y+R2()*10|0;if(wr(px,py)&&T[li(px,py)]>1)drops.push({id:pick2(["sword_w","sword_s","arrow","spear","wood_shield","gold","arrow"]),n:1+(R2()*3|0),x:px+.5,y:py+.5,t:0,o:-1});if(R2()<.2)sB(px,py,15)}chestAt(x+7,y+5,loot(1),"fallen supplies")}]
+];
+for(const[k,cat,names,cnt,w,h,fn,rec]of L)for(let n=0;n<cnt;n++){const s=site(w,h,(x,y)=>flat(x,y,w,h)&&(k!="mining"||nearT(x,y,6,5)));if(!s)continue;fn(s[0],s[1],w,h);reg(k,cat,names,s[0],s[1],w,h,rec)}
+// ocean
+for(let n=0;n<9;n++){const s=site(5,3,(x,y)=>{if(T[li(x+2,y+1)]!=1)return false;for(const[dx,dy]of[[-6,0],[10,0],[2,-6],[2,8]])if(wr(x+dx,y+dy)&&T[li(x+dx,y+dy)]==0)return true;return false},900);if(s){rect(s[0],s[1],5,3,{water:1,gap:.4,fl:0,door:false});chestAt(s[0]+2,s[1]+1,loot(2),"wreck cargo");reg("shipwreck","ocean",["the shipwreck","the lost galleon","the broken brig"],s[0],s[1],5,3)}}
+for(let n=0;n<3;n++){const s=site(9,5,(x,y)=>{if(T[li(x,y)]!=2)return false;let w=0;for(let i=0;i<10;i++)if(wr(x+i,y)&&T[li(x+i,y)]==1)w++;return w>=5},1500);if(s){for(let i=0;i<10;i++){const k=li(s[0]+i,s[1]);if(T[k]==1||T[k]==2){B[k]=16;O[k]=0}}rect(s[0],s[1]-4,5,4,{gap:.25,ch:1,tier:1});reg("harbor","ocean",["the abandoned harbor","the silted docks"],s[0],s[1]-4,9,5,1)}}
+const il=ISL.slice().sort((a,b)=>b.r-a.r);for(const kind of["islandtemple","pirate","lighthouse"])for(let n=0;n<3;n++){const w=kind=="pirate"?9:kind=="lighthouse"?3:11,h=kind=="pirate"?7:kind=="lighthouse"?3:9;let I=null,x=0,y=0;for(let q=0;q<il.length;q++){const c=il[q];if(c.r<(kind=="lighthouse"?4:6))continue;x=c.x-(w>>1);y=c.y-(h>>1);if(flat(x,y,w,h)){I=il.splice(q,1)[0];break}}if(!I)break;
+if(kind=="lighthouse"){rect(x,y,3,3,{ch:1,tier:2});B[li(x+1,y)]=10;STR.push({t:10,x:x+1,y})}else if(kind=="pirate"){rect(x,y,9,7,{gap:.5,ch:3,tier:2})}else{rect(x,y,11,9,{gap:.12,ch:2,tier:3})}
+reg(kind,"ocean",{lighthouse:["the abandoned lighthouse"],pirate:["the pirate hideout","blackwater cove"],islandtemple:["the lost island temple"]}[kind],x,y,w,h,kind=="lighthouse")}
+// natural
+for(let n=0;n<6;n++){let s=null;for(let a=0;a<600&&!s;a++){const x=30+R2()*(WS-60)|0,y=30+R2()*(WS-70)|0;let ok=T[li(x,y)]==6;for(let dy=-6;dy<=6&&ok;dy+=3)for(let dx=-6;dx<=6&&ok;dx+=3)if(T[li(x+dx,y+dy)]<6)ok=false;if(ok)s=[x,y]}
+if(s){const kind=n<3?"crystalcave":n<5?"cavern":"mineral",r=kind=="cavern"?8:kind=="mineral"?2:5;pocket(s[0],s[1],r,{cr:kind=="mineral"?.7:kind=="crystalcave"?.2:.05,pil:kind=="cavern"?.12:0});if(kind!="mineral")chestAt(s[0],s[1],loot(2),kind=="cavern"?"cavern stash":"crystal hoard");reg(kind,"natural",{crystalcave:["the crystal cave","the glittering grotto"],cavern:["the underground cavern","the deep cavern"],mineral:["the rare mineral formation"]}[kind],s[0]-r,s[1]-r,r*2,r*2)}}
+for(let n=0;n<6;n++){const s=site(5,5,(x,y)=>flat(x,y,5,5)&&(O[li(x+2,y+2)]==0),600);if(s){const cx=s[0]+2,cy=s[1]+2;O[li(cx,cy)]=7;for(const[a,b]of[[-2,-1],[2,1],[-1,2],[1,-2]])if(!O[li(cx+a,cy+b)])O[li(cx+a,cy+b)]=1;chestAt(cx,cy+1,loot(2),"hollow");reg("ancienttree","natural",["the ancient tree","the old grandfather oak"],s[0],s[1],5,5)}}
+for(let n=0;n<3;n++){let s=null;for(let a=0;a<800&&!s;a++){const x=30+R2()*(WS-60)|0,y=30+R2()*(WS-60)|0;if(T[li(x,y)]==3&&T[li(x,y-1)]==6&&T[li(x,y-2)]==6&&T[li(x,y-3)]==6)s=[x,y]}
+if(s){for(let i=0;i<5;i++){const k=li(s[0],s[1]+i);if(T[k]==3||T[k]==2){T[k]=1;WF.add(k)}}const k=li(s[0],s[1]-1);WF.add(k);T[k]=1;T[li(s[0]+1,s[1]-3)]=7;O[li(s[0]+1,s[1]-3)]=0;T[li(s[0]+1,s[1]-2)]=7;T[li(s[0]+1,s[1]-1)]=7;chestAt(s[0]+1,s[1]-3,loot(2),"behind the falls");reg("waterfall","natural",["the hidden waterfall","veil falls"],s[0],s[1]-3,3,6)}}}
+function gen(sd){seed=sd;const rnd=mb(sd);R2=rnd;T=new Uint8Array(N);O=new Uint8Array(N);B=new Uint8Array(N);Rf=new Uint8Array(N);RD=new Uint8Array(N);TO=new Uint8Array(N);TD=new Uint8Array(N);TC=new Uint8Array(N);KN=new Uint8Array(N);H={};F={};FW={};CH={};CN={};CO={};CA={};STR=[];SU=[];TR=[];ISL=[];WF=new Set();FARMS=new Set();boats=[];drops=[];projs=[];civs=[];claims=[];pend=[];invs=[];TALK=[];EV=[];CL=[];LIN=[];MARKS=[];ST={built:0,dug:0,disc:0,kills:0,crafted:0,sailed:0,wars:0};const E=new Float32Array(N);
+for(let y=0;y<WS;y++)for(let x=0;x<WS;x++){const i=y*WS+x;let e=.7*fbm(x*.008,y*.008,sd,4)+.3*fbm(x*.04,y*.04,sd+9,3);e=(e-.5)*2.4+.5;const ed=Math.min(x,y,WS-1-x,WS-1-y);if(ed<30)e-=(30-ed)*.028;E[i]=e;
+const tp=1-Math.abs(y/WS-.5)*1.9+(fbm(x*.03,y*.03,sd+3,3)-.5)*.4-Math.max(0,e-.62)*1.1,m=fbm(x*.035,y*.035,sd+5,4);let t;
+if(e<.34)t=0;else if(e<.4)t=1;else if(e<.43)t=2;else if(e>.74)t=fbm(x*.15,y*.15,sd+4,2)>.64?7:6;else if(tp<.24)t=4;else if(tp>.66&&m<.4)t=5;else if(e<.53&&m>.6&&tp>.32)t=8;else t=3;
+if((t==3||t==4||t==5||t==8)&&e<.62){const q=fbm(x*.07,y*.07,sd+11,3);if(q>.7)t=q>.76?0:1}T[i]=t}
+for(let k=0;k<60;k++){let p=-1;for(let a=0;a<300&&p<0;a++){const q=rnd()*N|0;if(E[q]>.66&&T[q]!=0)p=q}if(p<0)continue;const seen=new Set();for(let s=0;s<700;s++){if(T[p]<=1)break;if(T[p]!=6&&T[p]!=7)T[p]=1;seen.add(p);let b=-1,be=9;const x=p%WS,y=p/WS|0;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(!wr(nx,ny))continue;const n=ny*WS+nx;if(seen.has(n))continue;const v=E[n]+rnd()*.015;if(v<be){be=v;b=n}}if(b<0)break;p=b}}
+for(let k=0;k<1400&&ISL.length<70;k++){const cx=30+rnd()*(WS-60)|0,cy=30+rnd()*(WS-60)|0,r=4+rnd()*8|0;let ok=T[li(cx,cy)]==0;for(let q=0;ok&&q<16;q++){const an=q*.39,x=cx+Math.cos(an)*(r+8)|0,y=cy+Math.sin(an)*(r+8)|0;if(!wr(x,y)||T[li(x,y)]!=0)ok=false}if(!ok)continue;ISL.push({x:cx,y:cy,r,name:nm()+" isle",disc:0});for(let dy=-r-2;dy<=r+2;dy++)for(let dx=-r-2;dx<=r+2;dx++){const d=Math.hypot(dx,dy)/r+(vn(cx+dx,cy+dy,sd+3)-.5)*.6,i=li(cx+dx,cy+dy);if(d<.65)T[i]=3;else if(d<.85)T[i]=2;else if(d<1)T[i]=1}}
+for(let y=0;y<WS;y++)for(let x=0;x<WS;x++){const i=y*WS+x,t=T[i],m=fbm(x*.03,y*.03,sd+5,4),r=rnd(),nw=E[i]<.5;
+if(t==6){if(r<.05)O[i]=4}else if(t==7){if(r<.02)O[i]=6}
+else if(t==3){const p=m>.55?.42:m>.45?.07:.012;O[i]=r<p?1:r<p+.03+(E[i]>.6?.04:0)?2:r<p+.05+(nw?.02:0)?3:0}
+else if(t==4){const p=m>.5?.1:.02;O[i]=r<p?1:r<p+.015?2:0}else if(t==5){if(r<.02)O[i]=2}else if(t==8){O[i]=r<.2?1:r<.24?3:0}else if(t==2&&r<.006)O[i]=2}
+for(let k=0;k<Math.min(20,ISL.length);k++){const I=ISL[k];for(let a=0;a<60;a++){const x=I.x+(rnd()*I.r-I.r/2)|0,y=I.y+(rnd()*I.r-I.r/2)|0,i=li(x,y);if(T[i]==3&&!O[i]){TR.push({x,y,dug:0});break}}}
+for(let k=0,n=0;k<6000&&n<12;k++){const x=rnd()*WS|0,y=rnd()*WS|0,i=li(x,y);if(T[i]==2&&!O[i]&&E[i]>.41){TR.push({x,y,dug:0});n++}}
+genStructs();animals=[];for(let k=0;k<520;k++)spawnAn(rnd);R2=Math.random}
+function spawnAn(rnd){rnd=rnd||rr;for(let a=0;a<60;a++){const x=rnd()*WS|0,y=rnd()*WS|0,i=y*WS+x;if((T[i]==3||T[i]==4||T[i]==8)&&!O[i]){animals.push({x:x+.5,y:y+.5,hp:3,dx:0,dy:0,t:0});return}}}
+
+// ---- movement, inventory, actions ----
+function solid(x,y){if(!wr(x,y))return true;const i=y*WS+x,t=T[i],o=O[i];return t==0||t==6||(o>0&&o!=5)||SOLB.has(B[i])}
+const bl=(x,y,r)=>solid(Math.floor(x-r),Math.floor(y-r))||solid(Math.floor(x+r),Math.floor(y-r))||solid(Math.floor(x-r),Math.floor(y+r))||solid(Math.floor(x+r),Math.floor(y+r));
+const mv=(a,dx,dy)=>{if(!bl(a.x+dx,a.y,.3))a.x+=dx;if(!bl(a.x,a.y+dy,.3))a.y+=dy};
+const wb=(x,y)=>{const fx=Math.floor(x),fy=Math.floor(y);return!wr(fx,fy)||T[li(fx,fy)]>1||SOLB.has(B[li(fx,fy)])};
+const mvB=(a,dx,dy)=>{const r=.3,ok=(x,y)=>!(wb(x-r,y-r)||wb(x+r,y-r)||wb(x-r,y+r)||wb(x+r,y+r));if(ok(a.x+dx,a.y))a.x+=dx;if(ok(a.x,a.y+dy))a.y+=dy};
+const cnt=(a,id)=>{let s=0;for(const q of a.inv)if(q&&q.i==id)s+=q.n;return s};
+function tr(a,k){if(a===P&&!autopilot){const s=a.inv[a.sel];return s&&IT[s.i].tool==k?IT[s.i].tier:0}let t=0;for(const s of a.inv)if(s&&IT[s.i].tool==k&&IT[s.i].tier>t)t=IT[s.i].tier;return t}
+function useTool(a,k){let j=-1,bt=0;if(a===P&&!autopilot){const s=a.inv[a.sel];if(s&&IT[s.i].tool==k)j=a.sel}else for(let i=0;i<a.inv.length;i++){const s=a.inv[i];if(s&&IT[s.i].tool==k&&IT[s.i].tier>bt){bt=IT[s.i].tier;j=i}}if(j<0)return;const s=a.inv[j];if(s.d!=null&&--s.d<=0){a.inv[j]=null;if(a===P)tip("your "+IT[s.i].n+" broke");snd("break",a)}}
+function wslot(a){if(a===P&&!autopilot){const s=a.inv[a.sel];return s&&IT[s.i].dm?s:null}let b=null,bd=0;for(const s of a.inv)if(s&&IT[s.i].dm&&!IT[s.i].ranged&&IT[s.i].dm>bd){bd=IT[s.i].dm;b=s}return b}
+function wdmg(a){const s=wslot(a);if(!s)return 5;const d=IT[s.i];return d.ranged?3:d.dm}
+function add(a,id,n,meta){const d=IT[id];a.seen.add(id);const m=stk(id);if(m>1)for(const s of a.inv)if(s&&s.i==id&&s.n<m&&s.m==null){const k=Math.min(m-s.n,n);s.n+=k;n-=k;if(!n){if(a===P&&SET.autoEquip&&d.slot)autoEquip(a);return 0}}for(let j=0;j<a.inv.length&&n;j++)if(!a.inv[j]){const k=Math.min(m,n);a.inv[j]={i:id,n:k};if(d.du)a.inv[j].d=d.du;if(meta!=null)a.inv[j].m=meta;n-=k}if(a===P&&SET.autoEquip&&d.slot)autoEquip(a);return n}
+function putSlot(a,s){const d=IT[s.i],m=stk(s.i);if(m>1&&s.m==null)for(const q of a.inv)if(q&&q.i==s.i&&q.n<m&&q.m==null){const k=Math.min(m-q.n,s.n);q.n+=k;s.n-=k;if(!s.n)return true}for(let j=0;j<a.inv.length;j++)if(!a.inv[j]){a.inv[j]=s;return true}return false}
+function take(a,id,n){for(let j=a.inv.length-1;j>=0&&n>0;j--){const s=a.inv[j];if(s&&s.i==id){const k=Math.min(s.n,n);s.n-=k;n-=k;if(!s.n)a.inv[j]=null}}}
+function drop(a,id,n,o){o=o||{};let x=a.x+(R2===rr?0:0)+rr()-.5,y=a.y+rr()-.5;if(o.thr){x=a.x+o.thr[0]*2.4;y=a.y+o.thr[1]*2.4;if(bl(x,y,.2)){x=a.x;y=a.y}}drops.push({id,n,x,y,t:o.t!=null?o.t:.35,o:a.gid,d:o.d,m:o.m})}
+function dropSlot(a,s,o){drop(a,s.i,s.n,Object.assign({d:s.d,m:s.m},o))}
+function eat(a,j){const s=a.inv[j];if(!s||!IT[s.i].f)return;a.hun=Math.min(100,a.hun+IT[s.i].f);take(a,s.i,1);snd("eat",a)}
+function equip(a,j){const s=a.inv[j];if(!s)return false;const d=IT[s.i];if(!d.slot)return false;const o=a.eq[d.slot];a.inv[j]=o;a.eq[d.slot]=s;return true}
+function unequip(a,sl){const s=a.eq[sl];if(!s)return;if(putSlot(a,s))a.eq[sl]=null;else tip("inventory full")}
+function autoEquip(a){for(const sl of["armor","shield"]){let b=-1,bv=a.eq[sl]?(IT[a.eq[sl].i].ar||IT[a.eq[sl].i].bl*10):0;for(let j=0;j<a.inv.length;j++){const s=a.inv[j];if(s&&IT[s.i].slot==sl){const v=IT[s.i].ar||IT[s.i].bl*10;if(v>bv){bv=v;b=j}}}if(b>=0)equip(a,b)}}
+const armorOf=a=>(a.eq.armor?IT[a.eq.armor.i].ar:0),warmOf=a=>(a.eq.armor?IT[a.eq.armor.i].wm:0);
+function atk(a,b,dmg){if(b.dead||kinOf(a,b))return;if(b.siegeCover>time)dmg*=.82;const sh=b.eq.shield?IT[b.eq.shield.i].bl:0;dmg*=Math.max(.25,1-armorOf(b)*.06)*(1-sh);b.hp-=dmg;b.hitT=time+.25;b.last=a.gid;b.lastT=time;b.gr=b.gr||{};b.gr[a.gid]=time+90;b.rl[a.gid]=(b.rl[a.gid]||0)-25;if(b.ai&&b.civ>=0&&a.civ!==b.civ){const dc=civs[b.civ];if(dc){dc.defenseAlert={attacker:a.gid,x:b.x,y:b.y,t:time,expires:time+55};if(a.civ>=0&&civs[a.civ]&&!dc.war[a.civ])declareWar(dc.id,a.civ,"our people were attacked");}}if(b.eq.armor&&--b.eq.armor.d<=0)b.eq.armor=null;if(b.eq.shield&&--b.eq.shield.d<=0)b.eq.shield=null;useTool(a,"sword");useTool(a,"spear");CL.push({t:time,x:`${a.n} hit ${b.n} (${dmg|0})`});if(CL.length>120)CL.shift();snd("hurt",b);if(b.civ>=0&&a.civ>=0&&a.civ!=b.civ)annoy(a.civ,b.civ,-4)}
+function hurtAn(a,an,d){an.hp-=d||Math.max(1+tr(a,"axe")*.5,wdmg(a)/4);snd("hurt",a);if(an.hp<=0){animals.splice(animals.indexOf(an),1);drop(a,"meat",2);if(rr()<.6)drop(a,"leather",1);ST.kills++}}
+function toolHit(a,i,o,t){const sea=season();let nd,d,s="chop",tier;
+if(B[i]==14){if(F[i]>=60){F[i]=0;drop(a,"wheat",2+(rr()*2|0));snd("pick",a);return 1}return 0}if(B[i])return 0;
+if(o==1){tier=tr(a,"axe");nd=[6,4,3,2,2][tier];d=["wood",2+(rr()*2|0)];useTool(a,"axe")}
+else if(o==7){tier=tr(a,"axe");nd=[16,10,7,5,5][tier];d=["wood",8+(rr()*5|0)];useTool(a,"axe")}
+else if(o==2){tier=tr(a,"pick");nd=[5,3,2,2,2][tier];d=["stone",1+(rr()*2|0)];s="mine";useTool(a,"pick")}
+else if(o==3){if(sea==3){if(a===P)tip("the bush is bare in winter");return 0}nd=1;d=["berries",2];s="pick"}
+else if(o==4){tier=tr(a,"pick");if(tier<2)return 0;nd=tier>2?3:5;d=["iron_ore",1+(rr()*2|0)];s="mine";useTool(a,"pick")}
+else if(o==6){tier=tr(a,"pick");if(tier<3)return a===P&&tip("crystals need an iron pickaxe or better")&&0;nd=tier>3?2:4;d=["crystal",1+(rr()*2|0)];s="mine";useTool(a,"pick")}
+else if(t==6){tier=tr(a,"pick");if(!tier)return 0;nd=[0,5,3,2,2][tier];d=["stone",1];s="mine";useTool(a,"pick")}else return 0;
+H[i]=(H[i]||0)+1;snd(s,a);if(H[i]>=nd){delete H[i];drop(a,...d);if(o==3)O[i]=5;else if(o)O[i]=0;if(T[i]==6)T[i]=7}return 1}
+function hit(a,x,y){const i=li(x,y);return toolHit(a,i,O[i],T[i])}
+// ---- placing, building ----
+let rot=0,FW={};const STRC=new Set([10,11,12,13,19,20,21,22,24,25,26]);
+function houseGeo(x,y){const w=rot&1?4:5,h=rot&1?5:4;return{x0:x-(w>>1),y0:y-(h>>1),w,h}}
+function freeSpot(x,y){if(!wr(x,y))return false;const i=li(x,y);return land(T[i])&&!O[i]&&!B[i]&&!Rf[i]}
+function canPut(id,x,y){if(!wr(x,y))return false;const i=li(x,y),t=T[i],d=IT[id];if(d.boat)return t<=1&&!B[i]&&!boats.some(r=>(r.x|0)==x&&(r.y|0)==y);
+if(id=="house"){const g=houseGeo(x,y);for(let j=0;j<g.h;j++)for(let k=0;k<g.w;k++)if(!freeSpot(g.x0+k,g.y0+j))return false;return true}
+if(id=="door"||id=="gate")return B[i]==2||(land(t)&&!O[i]&&!B[i]);if(id=="roof")return land(t)&&!Rf[i];if(id=="farm")return(t==3||t==8||t==4)&&!O[i]&&!B[i];return land(t)&&!O[i]&&!B[i]}
+function put(a,id,x,y){if(!canPut(id,x,y))return false;const d=IT[id];
+if(d.boat){boats.push({x:x+.5,y:y+.5,k:id,du:BS[id].du,inv:BS[id].cap?Array(BS[id].cap).fill(null):null});take(a,id,1);snd("splash",a);return true}
+if(id=="house"){const g=houseGeo(x,y);for(let j=0;j<g.h;j++)for(let k=0;k<g.w;k++){const i=li(g.x0+k,g.y0+j);B[i]=(k==0||j==0||k==g.w-1||j==g.h-1)?2:1;Rf[i]=1}const dx=rot&1?g.x0+g.w-1:g.x0+(g.w>>1),dy=rot&1?g.y0+(g.h>>1):g.y0+g.h-1;B[li(dx,dy)]=3;if(a===P)ST.built+=5;a.hs++;note("build","house",a)}
+else{const i=li(x,y);if(id=="roof")Rf[i]=1;else{B[i]=PB[id];if([2,23,27,28].includes(PB[id]))FW[i]=PB[id]==2?45:PB[id]==23?100:PB[id]==27?180:320;if(STRC.has(PB[id]))STR.push({t:PB[id],x,y,owner:a.gid,civ:a.civ,hp:PB[id]==24?180:PB[id]==25?220:PB[id]==26?260:100,fireT:time+2});if(id=="farm"){F[i]=0;FARMS.add(i)}if(id=="chest"){CH[i]=Array(32).fill(null);CO[i]=a.gid;CA[i]=a.civ>=0?"s":"p"}if(id=="bed"||id=="workbench2"||id=="anvil")note("build",id,a)}if(a===P)ST.built++}
+take(a,id,1);snd("place",a);return true}
+function note(k,id,a){if(a===P||a.civ>=0&&a.civ==P.civ)ev("build",`${a.n} built a ${IT[id]?IT[id].n:id}`,{who:[a.gid],civ:a.civ,loc:{x:a.x|0,y:a.y|0}})}
+function removeAt(a,x,y){const i=li(x,y),b=B[i];if(b&&b!=15&&b!=16){if(STRC.has(b)){const k=STR.findIndex(s=>s.x==x&&s.y==y);if(k>=0)STR.splice(k,1)}if(CH[i]){for(const q of CH[i])if(q)dropSlot(a,q);delete CH[i];delete CO[i];delete CN[i]}if(b==14)FARMS.delete(i);delete FW[i];B[i]=0;if(BI[b])drop(a,BI[b],1)}else if(Rf[i]){Rf[i]=0;drop(a,"roof",1)}else return;snd("place",a)}
+// ---- crafting ----
+function stationNear(a,c,r){r=r||4;const codes=c==11?[11,19]:[c];return STR.some(s=>codes.includes(s.t)&&Math.hypot(s.x+.5-a.x,s.y+.5-a.y)<=r)}
+function canOpen(a,i){const o=CO[i];if(o==null||o<0||o==a.gid)return true;const ow=actors[o];return!!(ow&&CA[i]=="s"&&ow.civ>=0&&ow.civ==a.civ)}
+function chestsNear(a,r){const out=[];for(const s of STR)if(s.t==12&&Math.hypot(s.x+.5-a.x,s.y+.5-a.y)<=(r||8)){const i=li(s.x,s.y);if(CH[i]&&canOpen(a,i))out.push(i)}return out}
+function avail(a,k){let n=cnt(a,k);for(const i of chestsNear(a,7))for(const s of CH[i])if(s&&s.i==k)n+=s.n;return n}
+function takeAny(a,k,n){const h=Math.min(cnt(a,k),n);take(a,k,h);n-=h;for(const i of chestsNear(a,7)){if(n<=0)break;for(let j=0;j<32&&n>0;j++){const s=CH[i][j];if(s&&s.i==k){const q=Math.min(s.n,n);s.n-=q;n-=q;if(!s.n)CH[i][j]=null}}}}
+function unlocked(a,id){const r=RC[id];if(r.lock&&!a.cr.has("_"+r.lock))return false;return(r.req||[]).every(q=>a.cr.has(q))&&(a.ai||Object.keys(r.in).every(k=>a.seen.has(k)))}
+function craft(a,id){const r=RC[id];if(!unlocked(a,id))return"locked";for(const k in r.in)if(avail(a,k)<r.in[k])return"materials";if(r.st&&!stationNear(a,r.st))return"station";for(const k in r.in)takeAny(a,k,r.in[k]);const d=IT[id];let l=r.o;if(d.tool||d.dm||d.slot){const s={i:id,n:1};if(d.du)s.d=d.du;l=(r.o-1)+(putSlot(a,s)?0:1)}else l=add(a,id,r.o);if(l)drop(a,id,l);a.cr.add(id);if(a===P)ST.crafted++;if(id=="tmap"){const u=TR.map((q,i)=>q.dug?-1:i).filter(i=>i>=0);const sl=a.inv.find(s=>s&&s.i=="tmap"&&s.m==null);if(sl)sl.m=u.length?pick(u):0}if(a.ai)autoEquip(a);return"ok"}
+function qCraft(id,n){const r=RC[id];for(let k=0;k<n;k++){if(P.cq.length>=8)break;P.cq.push({id,t:0})}}
+function useItem(a,j){const s=a.inv[j];if(!s)return false;const d=IT[s.i];if(d.f){eat(a,j);return true}if(d.slot){equip(a,j);snd("place");return true}
+if(s.i=="scroll"){a.cr.add("_scroll");take(a,"scroll",1);tip("you learned to forge crystal pickaxes");ev("discover","an ancient scroll revealed a lost recipe",{who:[a.gid]});return true}
+if(s.i=="journal"){tip("journal: "+(s.m||"the pages are blank"));if(s.m){TALK.push({t:time,f:"journal",to:"",x:s.m})}return true}return false}
+
+// ---- time, weather, events ----
+const SEAN=["spring","summer","autumn","winter"],season=t=>{const v=Number(t==null?time:t);return Number.isFinite(v)?((Math.floor(((v%YEAR)+YEAR)%YEAR/SEAS)%4)):0},hour=()=>((time/DAY)*24+7)%24,al=a=>a&&!a.dead,ageOf=a=>(time-a.born)/LY,fname=a=>a.n+" "+a.sur;
+function dstr(t){return`year ${Math.floor(t/YEAR)+1}, ${SEAN[season(t)]}, day ${Math.floor((t%SEAS)/DAY)+1}`}
+function dark(){const h=hour();if(h>=22||h<4.5)return .85;if(h>=19.5)return(h-19.5)/2.5*.85;if(h<6.5)return .85*(1-(h-4.5)/2);return 0}
+function ev(type,text,o){o=o||{};EV.push({t:time,type,x:text,who:o.who||[],civ:o.civ==null?-1:o.civ,loc:o.loc||null,imp:!!o.imp});if(EV.length>800)EV.shift();if(o.n||o.imp&&(o.civ==P.civ&&P.civ>=0))tip(text);if(o.imp)autoSave("event")}
+const WTB={spring:["clear","clear","rain","fog","wind"],summer:["clear","clear","clear","wind","rain","storm"],autumn:["rain","fog","wind","heavy","clear"],winter:["snow","snow","snowstorm","fog","clear"]},WI={clear:0,wind:.4,fog:.6,rain:.5,heavy:.9,storm:1,snow:.5,snowstorm:1};
+function weatherTick(dt){WX.nx-=dt;if(WX.nx<=0){WX.t=pick(WTB[SEAN[season()]]);WX.nx=70+rr()*110;if(WX.t!="clear")tip("weather: "+WX.t)}WX.i+=((WI[WX.t]||0)-WX.i)*dt*.3;if(WX.t=="storm"&&rr()<dt*.12){WX.fl=1;setTimeout(()=>snd("thunder"),400+rr()*900)}WX.fl=Math.max(0,WX.fl-dt*2.5)}
+const isRain=()=>WX.t=="rain"||WX.t=="heavy"||WX.t=="storm",isSnow=()=>WX.t=="snow"||WX.t=="snowstorm";
+function ambient(x,y){const t=T[li(x|0,y|0)];let e=[12,24,10,2][season()]+(t==4?-10:t==5?8:0)-dark()*6;if(WX.t=="snow")e-=3;if(WX.t=="snowstorm")e-=8;if(isRain())e-=2;return e}
+function warmSrc(a){let w=0;for(const s of STR)if((s.t==10||s.t==13||s.t==21)&&Math.abs(s.x-a.x)<6&&Math.abs(s.y-a.y)<6&&Math.hypot(s.x+.5-a.x,s.y+.5-a.y)<5.5)w=Math.max(w,26);if(Rf[li(a.x|0,a.y|0)])w=Math.max(w,12);return w+warmOf(a)}
+let wtT=0;
+function worldTick(dt){weatherTick(dt);wtT-=dt;if(wtT>0)return;wtT=1;const sea=season(),m=[1,1.3,.8,0][sea]*(isRain()?1.5:1);for(const k of FARMS)if(F[k]<60)F[k]=Math.min(60,F[k]+m);if(sea!=3)for(let n=0;n<60;n++){const i=rr()*N|0;if(O[i]==5&&rr()<.1)O[i]=3}
+const cap=[520,520,440,300][sea];if(animals.length<cap&&rr()<.5)spawnAn();else if(animals.length>cap&&rr()<.3)animals.pop()}
+// ---- people, family ----
+const TRN=["agg","gen","amb","cur","wrk","cau","loy"];
+function traits(a,b){const t={};for(const k of TRN)t[k]=a?clamp((a.tr[k]+b.tr[k])/2+(rr()-.5)*.4,0,1):rr();return t}
+function tlabel(a){const t=a.tr,l=[];if(t.agg>.7)l.push("aggressive");else if(t.agg<.3)l.push("peaceful");if(t.gen>.7)l.push("generous");else if(t.gen<.3)l.push("greedy");if(t.amb>.7)l.push("ambitious");if(t.cur>.7)l.push("curious");if(t.wrk>.7)l.push("hardworking");else if(t.wrk<.3)l.push("lazy");if(t.cau>.7)l.push("cautious");if(t.loy>.7)l.push("loyal");else if(t.loy<.3)l.push("untrustworthy");return l.join(", ")||"balanced"}
+function mkActor(ai,x,y,o){o=o||{};const a={gid:actors.length,ai,n:o.n||nm(),sur:o.sur||sn(),sex:o.sex||(rr()<.5?"m":"f"),born:o.born!=null?o.born:-(18+rr()*14)*LY,life:58+rr()*28,x,y,hp:100,hun:100,tp:15,eff:15,tw:0,inv:Array(32).fill(null),eq:{armor:null,shield:null},seen:new Set(),cr:new Set(),col:pick(SHIRTS),tr:o.tr||traits(),role:pick(["gatherer","builder","explorer","crafter","scavenger"]),rl:{},lv:{},gr:{},par:o.par||[],kids:[],pt:-1,civ:-1,base:{x,y},known:{},conv:[],doing:"waking up",say:null,sayT:0,tgt:null,hold:0,th:rr(),cd:0,bad:{},lx:x,ly:y,ck:.7,sk:0,path:null,pk:"",pi:0,ct:0,rp:0,tc:0,jc:0,vt:0,hs:0,fm:0,wantH:1,rad:28,fl:1,ph:0,hitT:0,last:null,lastT:-99,sl:0,job:"",dead:0,acc:0,lod:0,sel:0,cq:[],fav:{},moved:0,bt:0,mem:{places:[],met:{}}};a.spd=3.2+rr()*.6;actors.push(a);setOrd(a);return a}
+const STM={workbench:11,workbench2:19,campfire:10,chest:12,furnace:13,anvil:20,cookstation:21,bed:22};
+function setOrd(a){const o=["axe_w","pick_w","workbench","campfire","axe_s","farm","pick_s","chest","house","bed","furnace","sword_w","cookstation","anvil","pick_i"];if(a.role=="builder"){o.splice(o.indexOf("house"),1);o.splice(3,0,"house");a.wantH=3}if(a.tr.amb>.7)a.wantH=Math.max(a.wantH,2);if(a.role=="explorer"||a.tr.cur>.75)a.rad=36;a.ord=o}
+function stageOf(a){const g=ageOf(a);return g<4?"baby":g<12?"child":g<16?"youth":g<60?"adult":"elder"}
+function family(a){const g=x=>actors[x],par=a.par.map(g).filter(Boolean),gp=par.flatMap(p=>p.par.map(g)).filter(Boolean),sib=[...new Set(par.flatMap(p=>p.kids))].filter(k=>k!=a.gid).map(g),kids=a.kids.map(g),gk=kids.flatMap(k=>k.kids.map(g));return{par,gp,sib,kids,gk,pt:a.pt>=0?g(a.pt):null}}
+function kinOf(a,b){const f=family(a);return f.par.includes(b)||f.kids.includes(b)||f.sib.includes(b)||f.pt===b||f.gp.includes(b)||f.gk.includes(b)}
+function descendants(a){const out=[],st=[...a.kids];while(st.length){const k=actors[st.pop()];out.push(k);st.push(...k.kids)}return out}
+function canRaise(m,f){const c=m.civ>=0?civs[m.civ]:null,pop=c?c.mem.length:2,houses=c?c.mem.reduce((s,g)=>s+actors[g].hs,0):Math.max(m.hs,f.hs),food=[m,f].reduce((s,x)=>s+cnt(x,"cooked")*3+cnt(x,"bread")*2+cnt(x,"berries")+cnt(x,"meat")*2+cnt(x,"wheat"),0)+(c?c.mem.reduce((s,g)=>s+(chestFood(actors[g])),0):0);return houses*4+2>pop&&food>=6&&!(c&&Object.keys(c.war).length&&rr()<.7)&&pop<260}
+function chestFood(a){let n=0;for(const s of STR)if(s.t==12&&Math.hypot(s.x-a.base.x,s.y-a.base.y)<12){const i=li(s.x,s.y);if(CH[i]&&CO[i]==a.gid)for(const q of CH[i])if(q&&IT[q.i].f)n+=q.n}return Math.min(n,20)}
+function birth(m,f){const c=mkActor(true,m.x+.3,m.y+.3,{born:time,par:[f.gid,m.gid],sur:f.sur,tr:traits(m,f)});c.base={x:m.base.x,y:m.base.y};c.col=m.col;m.kids.push(c.gid);f.kids.push(c.gid);if(m.civ>=0)join(c,civs[m.civ]);ev("birth",`${fname(c)} was born to ${m.n} and ${f.n}`,{who:[c.gid,m.gid,f.gid],civ:m.civ,loc:{x:m.x|0,y:m.y|0},n:m===P||f===P});return c}
+function heirOf(a){const k=a.kids.map(g=>actors[g]).filter(al);if(!k.length){const p=actors[a.pt];return a.ai&&al(p)?p:null}k.sort((x,y)=>(ageOf(y)>=16)-(ageOf(x)>=16)||ageOf(y)-ageOf(x));return k[0]}
+function die(a,why){if(a.dead)return;a.dead=1;a.hp=0;a.dt=time;a.why=why;a.tgt=null;a.sl=0;a.wasLead=a.civ>=0&&civs[a.civ].lead==a.gid;const heir=heirOf(a),items=a.inv.filter(Boolean).concat(a.eq.armor?[a.eq.armor]:[],a.eq.shield?[a.eq.shield]:[]);a.inv.fill(null);a.eq={armor:null,shield:null};
+for(const s of items){if(heir&&putSlot(heir,s))continue;dropSlot(a,s,{t:.5})}for(const k in CO)if(CO[k]==a.gid)CO[k]=heir?heir.gid:-1;if(a.civ>=0)leave(a);const p=actors[a.pt];if(p)p.pt=-1;
+const k=actors[a.last],rec=k&&k!==a&&time-a.lastT<8;if(rec){k.rl[a.gid]=(k.rl[a.gid]||0);if(k.civ>=0&&a.civ>=0&&k.civ!=a.civ){annoy(k.civ,a.civ,-25);civs[a.civ].gr[k.civ]=(civs[a.civ].gr[k.civ]||0)+3}if(!a.ai||!k.ai||true)for(const f of family(a).kids.concat(family(a).par))if(al(f))f.gr[k.gid]=time+240}
+ev("death",`${fname(a)} died aged ${ageOf(a)|0} (${rec?"killed by "+k.n:why})`,{who:[a.gid].concat(rec?[k.gid]:[]),civ:a.civ,loc:{x:a.x|0,y:a.y|0},imp:a===P||a.kids.length>0,n:a===P});if(a===P)succeed(a,heir)}
+function succeed(a,heir){LIN.push(a.gid);if(!heir){endWorld();return}P=heir;heir.ai=false;heir.cq=[];heir.tgt=null;heir.path=null;heir.sl=0;heir.sel=a.sel;if(a.wasLead&&heir.civ>=0)civs[heir.civ].lead=heir.gid;ev("succession",`${fname(heir)} continues the family line${ageOf(heir)<16?" (still a minor)":""}`,{who:[heir.gid],civ:heir.civ,imp:true,n:true});cam.x=heir.x;cam.y=heir.y;paused=false}
+function endWorld(){paused=true;const root=actors[LIN[0]]||P,desc=descendants(root),mc=civs.find(c=>c.founder==root.gid)||civs.find(c=>c.mem.includes(root.gid)||c.founder==LIN[LIN.length-1]),live=actors.filter(al).length,alive=civs.filter(c=>!c.dead).length,top=EV.filter(e=>e.imp).slice(-10);
+$("end").innerHTML=`<h3>the world ends</h3><p>${fname(root)}'s line has no heirs left. ${LIN.length} generations of your family lived through ${dstr(time)}.</p><p>civilization: ${mc?`${mc.n} · peak population ${mc.peak} · ${mc.dead?"collapsed":"still standing"}`:"none founded"}<br>descendants: ${desc.length} (${desc.filter(al).length} alive when you fell)<br>structures discovered: ${ST.disc} · treasures dug: ${ST.dug} · things built: ${ST.built} · crafted: ${ST.crafted} · wars: ${ST.wars}</p><p>final world: ${live} people alive across ${alive} civilizations</p><p><b>important events</b></p>${top.map(e=>`<div>${dstr(e.t)}: ${e.x}</div>`).join("")}<p><button data-a="newworld:0">new world</button> <button data-a="loadauto:0">load autosave</button></p>`;$("end").style.display="block"}
+function life(a,dt){a.hun=Math.max(0,a.hun-(a.sl?.07:.17)*dt);if(a.hun<=0)a.hp-=2*dt;else if(a.hun>50&&a.tp>0)a.hp=Math.min(100,a.hp+(a.sl?3:1)*dt);
+a.tw-=dt;if(a.tw<=0){a.tw=.5+rr()*.3;a.eff=ambient(a.x,a.y)+warmSrc(a)+(a.sl?4:0)}a.tp+=(a.eff-a.tp)*.03*dt;if(a.tp<-8)a.hp-=.8*dt*(1+(-8-a.tp)/8);
+const g=ageOf(a);if(g>a.life&&rr()<dt*.02*(g-a.life+1))die(a,"old age");if(a.hp<=0)die(a,a.hun<=0?"starvation":a.tp<-8?"the cold":"wounds");
+for(let k=drops.length-1;k>=0;k--){const d=drops[k];if(d.t>0)d.t-=dt;if(a.dead)continue;if(d.o===a.gid&&d.t>0)continue;if(Math.abs(d.x-a.x)<.9&&Math.abs(d.y-a.y)<.9){const s={i:d.id,n:d.n};if(d.d!=null)s.d=d.d;let l;if(IT[d.id].du){l=putSlot(a,s)?0:d.n}else l=add(a,d.id,d.n,d.m);if(a===P&&l!=d.n)snd("pick",a);if(l)d.n=l;else drops.splice(k,1)}}}
+
+// ---- civilizations ----
+const CPAL=[["red","#d9433a"],["blue","#3a78e0"],["purple","#9a4fd6"],["orange","#ef8a2b"],["yellow","#e8c92f"],["pink","#f07fb5"],["cyan","#3ccfd6"],["magenta","#d63ad0"],["violet","#6a5cf0"],["coral","#f2705a"],["gold","#d6a02a"],["lavender","#b79cf0"],["crimson","#b02a4a"],["sky","#5ab8f0"],["brown","#a0623a"],["peach","#f0a878"]];
+const hex2=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+function hsl2(h,s,l){const a=s*Math.min(l,1-l),f=n=>{const k=(n+h/30)%12,c=l-a*Math.max(-1,Math.min(k-3,9-k,1));return Math.round(255*c).toString(16).padStart(2,"0")};return"#"+f(0)+f(8)+f(4)}
+function civColor(){const used=new Set(civs.filter(c=>!c.dead).map(c=>c.col)),fr=CPAL.filter(p=>!used.has(p[1]));if(fr.length)return pick(fr);for(let n=0;n<80;n++){const h=Math.floor(rr()*360);if(h>65&&h<180)continue;const c=hsl2(h,.7,.58);if(!used.has(c))return["hue"+h,c]}return["pale","#f4f4f4"]}
+const stageName=n=>n<=1?"camp":n<4?"tribe":n<16?"settlement":"village",SR={camp:7,tribe:11,settlement:17,village:26};
+const live=c=>c.mem.map(g=>actors[g]).filter(al);
+function mkCiv(a,name){const col=civColor(),c={id:civs.length,n:name||nm()+pick(["ia","land","folk","reach","kin"]),col:col[1],cn:col[0],mem:[],rel:{},war:{},ally:{},trade:{},gr:{},lead:-1,t0:time,el:time,founder:a.gid,stage:"camp",peak:1,law:{},coun:[],roadT:0};civs.push(c);join(a,c,true);c.lead=a.gid;claims.push({x:a.base.x|0,y:a.base.y|0,civ:c.id,r:3});if(a.ai)c.law={ration:a.tr.gen>.5,conscript:a.tr.agg>.6,openb:a.tr.agg<.4,theft:a.tr.loy>.5,tax:a.tr.amb>.5};ev("civ",`${fname(a)} founded ${c.n} (${c.cn})`,{who:[a.gid],civ:c.id,loc:{x:a.x|0,y:a.y|0},imp:true,n:a===P});return c}
+function join(a,c,q){if(a.civ>=0)leave(a,true);a.civ=c.id;c.mem.push(a.gid);c.peak=Math.max(c.peak,c.mem.length);if(c.lead<0)c.lead=a.gid;if(!q)ev("join",`${fname(a)} joined ${c.n}`,{who:[a.gid],civ:c.id,loc:{x:a.x|0,y:a.y|0},n:a===P||c.lead==P.gid})}
+function leave(a,q){const c=civs[a.civ];a.civ=-1;if(!c)return;c.mem=c.mem.filter(g=>g!=a.gid);c.coun=c.coun.filter(g=>g!=a.gid);if(!c.mem.length){c.dead=1;c.lead=-1;claims=claims.filter(x=>x.civ!=c.id);ev("collapse",`${c.n} collapsed`,{civ:c.id,imp:true,n:c.id==P.civ});return}if(!q&&!a.dead)ev("leave",`${fname(a)} left ${c.n}`,{who:[a.gid],civ:c.id,n:a===P});if(c.lead==a.gid){c.lead=-1;elect(c)}}
+function elect(c){const m=live(c);if(!m.length){c.lead=-1;return}const sc=x=>x.hs*2+x.fm+cnt(x,"wood")/20+x.tr.amb*2+x.tr.loy+(x.role=="builder"?1:0)+ageOf(x)/40,v={};for(const x of m){if(x===P)continue;let b=null,bs=-9;for(const y of m){if(ageOf(y)<16)continue;const s=sc(y)+rr()*1.5+(y===x?x.tr.amb:0);if(s>bs){bs=s;b=y}}if(b)v[b.gid]=(v[b.gid]||0)+1}let w=null,bv=0;for(const g in v)if(v[g]>bv){bv=v[g];w=+g}if(w===null)w=m.sort((p,q)=>ageOf(q)-ageOf(p))[0].gid;c.lead=w;c.el=time;ev("leader",`${fname(actors[w])} was elected leader of ${c.n} (${bv}/${m.length} votes)`,{who:[w],civ:c.id,imp:true,n:c.id==P.civ});say(actors[w],`i will lead ${c.n} well`)}
+const strength=c=>live(c).reduce((s,a)=>s+wdmg(a)+armorOf(a)*3+a.hp/20,0),atWar=a=>a.civ>=0&&civs[a.civ]&&Object.keys(civs[a.civ].war).length>0;
+const annoy=(i,j,v)=>{const A=civs[i],B=civs[j];if(!A||!B)return;A.rel[j]=clamp((A.rel[j]||0)+v,-100,100);B.rel[i]=A.rel[j]};
+const hostile=(a,b)=>{if(a===b||b.dead)return false;if(a.gr[b.gid]>time)return true;if(a.civ<0||b.civ<0||a.civ==b.civ)return false;return!!civs[a.civ].war[b.civ]};
+function declareWar(i,j,why){const A=civs[i],B=civs[j];if(!A||!B||A.dead||B.dead||A.war[j])return;if(A.ally[j]){delete A.ally[j];delete B.ally[i]}A.war[j]=B.war[i]=time;A.rel[j]=B.rel[i]=Math.min(A.rel[j]||0,-60);if(i==P.civ||j==P.civ)ST.wars++;ev("war",`${A.n} declared war on ${B.n}${why?" — "+why:""}`,{civ:i,imp:true,n:i==P.civ||j==P.civ,loc:claims.find(c=>c.civ==i)});const L=actors[A.lead];if(L)say(L,`${A.n} is at war with ${B.n}!`);
+for(const[x,y]of[[A,B],[B,A]])for(const id in x.ally){const c=civs[id];if(c&&!c.dead&&c.id!=y.id&&!c.war[y.id]&&rr()<.7)declareWar(c.id,y.id,"honoring the alliance with "+x.n)}}
+function peace(i,j,why){const A=civs[i],B=civs[j];if(!A||!B)return;delete A.war[j];delete B.war[i];A.rel[j]=B.rel[i]=-10;A.gr[j]=Math.max(0,(A.gr[j]||0)-2);B.gr[i]=Math.max(0,(B.gr[i]||0)-2);ev("peace",`${A.n} and ${B.n} made peace${why?" — "+why:""}`,{civ:i,imp:true,n:i==P.civ||j==P.civ})}
+function ally(i,j){const A=civs[i],B=civs[j];A.ally[j]=B.ally[i]=time;A.rel[j]=B.rel[i]=Math.max(A.rel[j]||0,40);ev("alliance",`${A.n} and ${B.n} formed an alliance`,{civ:i,imp:true,n:i==P.civ||j==P.civ})}
+function unally(i,j,why){const A=civs[i],B=civs[j];delete A.ally[j];delete B.ally[i];annoy(i,j,-35);B.gr[i]=(B.gr[i]||0)+4;ev("alliance",`${A.n} broke its alliance with ${B.n}${why?" — "+why:""}`,{civ:i,imp:true,n:i==P.civ||j==P.civ})}
+function aiAccept(kind,from,to){const L=actors[to.lead],agg=L?L.tr.agg:.5,loy=L?L.tr.loy:.5,ra=to.rel[from.id]||0,sr=strength(from)/Math.max(1,strength(to)),gr=to.gr[from.id]||0;
+if(kind=="peace"){if(ra<-70&&agg>.35)return false;if(gr>6&&agg>.55&&rr()<.85)return false;return ra>-30+agg*40||(sr>1.5&&rr()<.5)||(time-(to.war[from.id]||time)>200&&rr()<.4)}
+if(kind=="ally")return ra>20&&agg<.85&&loy>.3&&rr()<.7;if(kind=="trade")return ra>-10&&rr()<.85;if(kind=="tribute")return sr>1.5&&rr()<.7;if(kind=="territory")return sr>2.2&&rr()<.5;return true}
+function councilVote(c,kind,tg){const m=c.coun.map(g=>actors[g]).filter(al);if(!m.length)return true;let y=0;for(const a of m)y+=(kind=="war"?(a.tr.agg>.4||(c.rel[tg]||0)<-40):(a.tr.agg<.7))?1:0;return y>=m.length/2}
+function transferClaim(cl,to,why){const old=civs[cl.civ];cl.civ=to;ev("capture",`${civs[to].n} captured territory from ${old.n}${why?" — "+why:""}`,{civ:to,imp:true,n:to==P.civ||old.id==P.civ,loc:{x:cl.x,y:cl.y}});annoy(to,old.id,-10);old.gr[to]=(old.gr[to]||0)+3}
+function bfsTerr(cl,id){const R=Math.floor(cl.r),sx=cl.x,sy=cl.y;if(!wr(sx,sy))return;terrStamp++;const q=terrQ;let h=0,t=0;q[t++]=li(sx,sy);terrV[q[0]]=terrStamp;terrD[q[0]]=0;while(h<t){const c=q[h++],d=terrD[c],cx=c%WS,cy=c/WS|0;const o=TO[c];if(o==0||d<TD[c]){if(o&&o!=id+1&&Math.abs(d-TD[c])<=2)TC[c]=1;TO[c]=id+1;TD[c]=d}else if(o!=id+1&&Math.abs(d-TD[c])<=2)TC[c]=1;if(d>=R)continue;for(let k=0;k<4;k++){const nx=cx+DX4[k],ny=cy+DY4[k];if(!wr(nx,ny))continue;const n=li(nx,ny);if(terrV[n]==terrStamp)continue;const t2=T[n];if(t2<2||t2==6)continue;terrV[n]=terrStamp;terrD[n]=d+1;q[t++]=n}}}
+const DX4=[1,-1,0,0],DY4=[0,0,1,-1],terrV=new Int32Array(N),terrD=new Uint8Array(N),terrQ=new Int32Array(N);let terrStamp=0;
+function computeTerritory(){TO.fill(0);TD.fill(255);TC.fill(0);for(const cl of claims)bfsTerr(cl,cl.civ)}
+function layRoads(c){for(const cl of claims)if(cl.civ==c.id){const R=Math.floor(cl.r);for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const x=cl.x+dx,y=cl.y+dy;if(!wr(x,y)||B[li(x,y)]!=3)continue;let px=cl.x,py=cl.y;while(px!=x){px+=Math.sign(x-px);const k=li(px,py);if(!B[k]&&!O[k]&&land(T[k]))RD[k]=1}while(py!=y){py+=Math.sign(y-py);const k=li(px,py);if(!B[k]&&!O[k]&&land(T[k]))RD[k]=1}}}}
+function assignCivJobs(c){
+ const members=live(c).filter(a=>a.ai&&ageOf(a)>=16);if(!members.length)return;
+ const due=c.jobPlanT||0;if(time<due)return;c.jobPlanT=time+24;
+ const food=members.reduce((n,a)=>n+cnt(a,"berries")+cnt(a,"meat")+cnt(a,"fish")+cnt(a,"wheat")+cnt(a,"bread")+cnt(a,"cooked"),0);
+ const foodTarget=Math.max(12,members.length*7),war=Object.keys(c.war).length>0;
+ const ranked=(score)=>members.slice().sort((a,b)=>score(b)-score(a));
+ const chosen=new Set();const set=(a,j)=>{if(a&&!chosen.has(a.gid)){a.job=j;chosen.add(a.gid)}};
+ // Every civilization keeps a dedicated blacksmith/armorer. Larger civs get two
+ // so one death or expedition cannot halt equipment production.
+ const smiths=members.slice().sort((a,b)=>(b.tr.wrk+b.tr.amb*.25+b.tr.cau*.15)-(a.tr.wrk+a.tr.amb*.25+a.tr.cau*.15));
+ const smithCount=members.length>=18?2:1;
+ for(const a of smiths.slice(0,smithCount))set(a,"blacksmith");
+ if(war){for(const a of ranked(x=>wdmg(x)+x.tr.agg*8).filter(x=>!chosen.has(x.gid)).slice(0,Math.max(1,Math.ceil(members.length*.35))))set(a,"guard")}
+ if(food<foodTarget){for(const a of ranked(x=>x.tr.wrk+x.tr.cau*.35).slice(0,Math.max(1,Math.ceil(members.length*.3))))set(a,"hunter");if(members.length>=4){const farmer=ranked(x=>x.tr.wrk+x.tr.gen*.2).find(x=>!chosen.has(x.gid));if(farmer)set(farmer,"farmer")}}
+ if(members.length>=3&&!war){const ex=ranked(x=>x.tr.cur+x.tr.cau*.4).find(x=>!chosen.has(x.gid));if(ex)set(ex,"explorer")}
+ const builders=ranked(x=>x.tr.wrk+x.tr.amb*.25).filter(x=>!chosen.has(x.gid));if(builders.length&&members.length>=3)set(builders[0],"builder");
+ const miners=ranked(x=>x.tr.wrk+x.tr.cau*.2).filter(x=>!chosen.has(x.gid));if(miners.length&&members.length>=5)set(miners[0],"miner");
+ for(const a of members)if(!chosen.has(a.gid))a.job=food<foodTarget?"gatherer":(a.tr.cur>.68?"explorer":"woodcutter");
+}
+function civTick(){const al2=civs.filter(c=>!c.dead);for(const c of al2){c.mem=c.mem.filter(g=>al(actors[g]));const n=c.mem.length;assignCivJobs(c);if(Object.keys(c.war).length&&time>(c.siegePlanT||0)){c.siegePlanT=time+28;const L=actors[c.lead];if(L&&L.ai&&ageOf(L)>=16&&!STR.some(s=>s.t==24&&s.civ==c.id)&&c.stage!="camp"&&c.stage!="tribe")plan(L,"catapult",0)}if(!n){c.dead=1;claims=claims.filter(x=>x.civ!=c.id);continue}c.peak=Math.max(c.peak,n);const st=stageName(n);if(st!=c.stage){const up=["camp","tribe","settlement","village"].indexOf(st)>["camp","tribe","settlement","village"].indexOf(c.stage);c.stage=st;const cl=claims.find(x=>x.civ==c.id);ev("stage",`${c.n} ${up?"grew into":"shrank to"} a ${st}`,{civ:c.id,imp:up&&(st=="village"||st=="settlement"),loc:cl,n:c.id==P.civ})}
+for(const cl of claims)if(cl.civ==c.id){const tg=SR[c.stage];cl.r+=cl.r<tg?.2:-.4;cl.r=Math.max(3,cl.r)}
+if(!actors[c.lead]||!al(actors[c.lead]))elect(c);if(n>=3&&!live(c).some(a=>a.role==="scavenger")){const scout=live(c).filter(a=>a!==P&&ageOf(a)>=16).sort((a,b)=>(b.tr.cur+b.tr.cau)-(a.tr.cur+a.tr.cau))[0];if(scout){scout.role="scavenger";scout.scav=null;say(scout,`i have been chosen to scout for ${c.n}`)}}if(c.stage!="camp"&&c.stage!="tribe"&&c.coun.length<3){const cand=live(c).filter(a=>a.gid!=c.lead&&ageOf(a)>=16&&!c.coun.includes(a.gid)).sort((x,y)=>y.tr.amb+y.tr.loy-x.tr.amb-x.tr.loy)[0];if(cand)c.coun.push(cand.gid)}
+for(const j in c.rel)if(!c.war[j])c.rel[j]=Math.min(100,c.rel[j]+.02+(c.trade[j]?.05:0));
+if(c.stage=="village"&&time>c.roadT){c.roadT=time+60;layRoads(c)}
+for(const m of live(c))if(m.hs>0&&time>(m.ot||0)){m.ot=time+30;if(!claims.some(x=>x.civ==c.id&&Math.hypot(x.x-m.base.x,x.y-m.base.y)<30)){claims.push({x:m.base.x|0,y:m.base.y|0,civ:c.id,r:3});ev("outpost",`${c.n} founded an outpost`,{civ:c.id,loc:{x:m.base.x|0,y:m.base.y|0}})}}
+const L=actors[c.lead];if(c.lead!=P.gid&&time-c.el>90&&n>3){const ch=live(c).filter(a=>a.tr.amb>.8&&a.gid!=c.lead&&ageOf(a)>=18&&a.ai)[0];if(ch&&L&&rr()<.02*ch.tr.amb&&(ch.tr.amb>L.tr.amb||wdmg(ch)>wdmg(L))){c.lead=ch.gid;c.el=time;ev("leader",`${fname(ch)} seized leadership of ${c.n} from ${fname(L)}`,{who:[ch.gid,L.gid],civ:c.id,imp:true,n:c.id==P.civ})}else if(time-c.el>700)elect(c)}
+if(L&&L.ai){
+// The whole civilization shares scout intelligence. Leaders continually reassess waiting raid orders.
+if(c.raidTarget&&time>(c.raidTarget.nextCheck||0)){const rt=civs[c.raidTarget.civ],cl=rt&&!rt.dead?claims.find(x=>x.civ===rt.id&&Math.hypot(x.x-c.raidTarget.x,x.y-c.raidTarget.y)<24):null;c.raidTarget.nextCheck=time+14;if(!rt||rt.dead||!cl){c.raidTarget=null}else if(!c.war[rt.id]){const rd=enemyReadiness(rt,cl),ratio=strength(c)/Math.max(1,strength(rt));if(rd.distracted||rd.armed===0||ratio>1.25){orderRaid(c,rt,"attack",cl);ev("raid",`${c.n} launched its planned strike against ${rt.n} while its defenses were distracted`,{civ:c.id,loc:{x:cl.x,y:cl.y},imp:true,n:c.id===P.civ||rt.id===P.civ})}}}
+for(const o of al2){if(o===c)continue;const r=c.rel[o.id]||0;
+if(!c.war[o.id]&&r<-55&&rr()<.06*(L.tr.agg+.3)&&councilVote(c,"war",o.id)){const why=(c.gr[o.id]||0)>3?"avenging past attacks":claims.some(x=>x.civ==o.id&&claims.some(y=>y.civ==c.id&&Math.hypot(x.x-y.x,x.y-y.y)<60))?"a territorial dispute":"mounting grievances";declareWar(c.id,o.id,why)}
+if(c.war[o.id]){if(time-c.war[o.id]>150&&strength(c)<strength(o)*.7&&rr()<.05){if(o.id==P.civ){if(!offers.some(f=>f.c==c.id))offers.push({c:c.id,k:"peace",t:time}),ev("diplomacy",`${c.n} requests peace`,{civ:c.id,n:true})}else if(aiAccept("peace",c,o))peace(c.id,o.id,"a negotiated end to the fighting")}else if(o.lead!=P.gid&&time-c.war[o.id]>360&&rr()<.02)peace(c.id,o.id,"war weariness")}
+else if(!c.ally[o.id]&&r>45&&rr()<.01&&L.tr.agg<.7){if(o.id==P.civ){if(!offers.some(f=>f.c==c.id))offers.push({c:c.id,k:"ally",t:time})}else if(aiAccept("ally",c,o))ally(c.id,o.id)}
+else if(c.ally[o.id]&&r<-20&&L.tr.loy<.35&&rr()<.02)unally(c.id,o.id,"it no longer trusted them")}}}
+for(let i=0;i<al2.length;i++)for(let j=i+1;j<al2.length;j++){const A=al2[i],B2=al2[j];if(A.dead||B2.dead||A.law.openb&&B2.law.openb)continue;let md=1e9;for(const c1 of claims)if(c1.civ==A.id)for(const c2 of claims)if(c2.civ==B2.id){const d=Math.hypot(c1.x-c2.x,c1.y-c2.y);if(d<md)md=d}if(md<60&&!A.ally[B2.id]){const la=actors[A.lead],lb=actors[B2.lead];annoy(A.id,B2.id,-.12*((la?la.tr.agg:.5)+(lb?lb.tr.agg:.5)+.3))}}
+offers=offers.filter(o=>time-o.t<120&&civs[o.c]&&!civs[o.c].dead);pend=pend.filter(p=>time-p.t<120&&al(actors[p.g])&&actors[p.g].civ<0);invs=invs.filter(v=>time-v.t<150&&!civs[v.c].dead)}
+let offers=[];
+
+// ---- pathfinding ----
+const DX=[1,-1,0,0,1,1,-1,-1],DY=[0,0,1,-1,1,-1,1,-1],gsc=new Float32Array(N),stm=new Int32Array(N),prv=new Int32Array(N);let stq=0;
+const pass=(x,y)=>!solid(x,y);
+function astar(sx,sy,gx,gy,sd){stq++;const hp=[],S=sy*WS+sx,push=(f,i)=>{let k=hp.length;hp.push([f,i]);while(k>0){const p=(k-1)>>1;if(hp[p][0]<=hp[k][0])break;[hp[p],hp[k]]=[hp[k],hp[p]];k=p}},
+pop=()=>{const t=hp[0],l=hp.pop();if(hp.length){hp[0]=l;let k=0;for(;;){let c=2*k+1;if(c>=hp.length)break;if(c+1<hp.length&&hp[c+1][0]<hp[c][0])c++;if(hp[k][0]<=hp[c][0])break;[hp[k],hp[c]]=[hp[c],hp[k]];k=c}}return t},
+hh=(x,y)=>{const a=Math.abs(x-gx),b=Math.abs(y-gy);return Math.max(a,b)+.41*Math.min(a,b)};gsc[S]=0;stm[S]=stq;prv[S]=-1;push(hh(sx,sy),S);let best=S,bh=hh(sx,sy),n=0,ok=false;
+while(hp.length&&n++<9000){const c=pop()[1],cx=c%WS,cy=c/WS|0,h0=hh(cx,cy);if(h0<bh){bh=h0;best=c}if(Math.max(Math.abs(cx-gx),Math.abs(cy-gy))<=sd){best=c;ok=true;break}
+for(let k=0;k<8;k++){const nx=cx+DX[k],ny=cy+DY[k];if(!wr(nx,ny)||!pass(nx,ny))continue;if(k>3&&(!pass(cx+DX[k],cy)||!pass(cx,cy+DY[k])))continue;const ni=ny*WS+nx,g=gsc[c]+(k>3?1.41:1)*(T[ni]==1||T[ni]==8?1.6:1);if(stm[ni]!=stq||g<gsc[ni]){stm[ni]=stq;gsc[ni]=g;prv[ni]=c;push(g+hh(nx,ny),ni)}}}
+const path=[];for(let c=best;c!=S&&c>=0;c=prv[c])path.push(c);path.reverse();return{p:path,ok}}
+// ---- spatial grid ----
+let SG=new Map();function buildGrid(){SG=new Map();for(const a of actors){if(a.dead)continue;const k=(a.x>>4)*1000+(a.y>>4);let l=SG.get(k);if(!l)SG.set(k,l=[]);l.push(a)}}
+function nearby(x,y,r){const out=[],c0=(x-r)>>4,c1=(x+r)>>4,r0=(y-r)>>4,r1=(y+r)>>4;for(let cx=c0;cx<=c1;cx++)for(let cy=r0;cy<=r1;cy++){const l=SG.get(cx*1000+cy);if(l)for(const a of l)if(Math.abs(a.x-x)<=r&&Math.abs(a.y-y)<=r)out.push(a)}return out}
+// ---- movement & stepping ----
+function walk(a,dx,dy,dt){const d=Math.hypot(dx,dy)||1,t=T[(a.y|0)*WS+(a.x|0)],w=(t==1?.6:t==8?.75:1)*(isSnow()?.9:1),s=(a.spd||3.4)*w;mv(a,dx/d*s*dt,dy/d*s*dt);if(dx)a.fl=dx>0?1:-1;a.ph+=dt*s;a.mv=1}
+function follow(a,t,dt){const key=(t.x|0)+","+(t.y|0);a.rp-=dt;if(!a.path||(a.pk!=key&&a.rp<=0)){const r=astar(a.x|0,a.y|0,t.x|0,t.y|0,Math.floor(t.stand));a.rp=1;a.pk=key;if(!r.ok&&!t.act&&!t.an){bad(a,t);return}a.path=r.p;a.pi=0}
+let wx=t.x,wy=t.y;const wp=a.path[a.pi];if(wp!==undefined){wx=wp%WS+.5;wy=(wp/WS|0)+.5;if(Math.hypot(wx-a.x,wy-a.y)<.3){a.pi++;return}}
+walk(a,wx-a.x,wy-a.y,dt);a.ck-=dt;if(a.ck<=0){a.ck=.7;if(Math.hypot(a.x-a.lx,a.y-a.ly)<.15){a.path=null;if(++a.sk>4)bad(a,t)}else a.sk=0;a.lx=a.x;a.ly=a.y}}
+function bad(a,t){if(t.tile)a.bad[li(t.tile[0],t.tile[1])]=time+90;a.tgt=null;a.path=null;a.sk=0;a.th=0}
+function aiBoatStep(a,dt){if(!a.boat||!a.sailTarget)return false;const b=a.boat,t=a.sailTarget,dx=t.x-b.x,dy=t.y-b.y,d=Math.hypot(dx,dy)||1,spd=(BS[b.k]||BS.raft).sp*.55*dt;
+if(d>2){b.x+=dx/d*Math.min(spd,d);b.y+=dy/d*Math.min(spd,d);a.x=b.x;a.y=b.y;a.mv=1;a.doing="sailing toward unexplored land";return true}
+// Find a safe nearby shore and disembark.
+for(let r=0;r<=4;r++)for(let k=0;k<8;k++){const x=Math.floor(t.x)+DX[k]*r,y=Math.floor(t.y)+DY[k]*r;if(freeSpot(x,y)){a.x=x+.5;a.y=y+.5;a.boat=null;a.sailTarget=null;a.tgt=null;a.path=null;a.doing="exploring a newly reached shore";return true}}
+a.sailTarget=null;a.boat=null;return false}
+function tryAIBoat(a){if(a.boat||a.civ<0||!civs[a.civ]||a.hun<45||time<(a.boatTryT||0)||!(a.role==="explorer"||a.role==="scavenger"||a.tr.cur>.72))return false;a.boatTryT=time+18;
+let boatId=cnt(a,"ship")?"ship":cnt(a,"sailboat")?"sailboat":cnt(a,"raft2")?"raft2":cnt(a,"raft")?"raft":null;
+if(!boatId){plan(a,"raft",0);boatId=cnt(a,"raft")?"raft":null;if(a.tgt)return true;if(!boatId)return true;}
+// Place a raft/boat in shallow water next to a reachable shoreline.
+let water=null;for(let r=1;r<=8&&!water;r++)for(let dy=-r;dy<=r&&!water;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!=r)continue;const x=(a.x|0)+dx,y=(a.y|0)+dy;if(!wr(x,y)||T[li(x,y)]>1||B[li(x,y)]||boats.some(q=>(q.x|0)==x&&(q.y|0)==y))continue;if(DX.some((vx,k)=>wr(x+vx,y+DY[k])&&land(T[li(x+vx,y+DY[k])]))){water={x,y};break}}
+if(!water)return false;if(!put(a,boatId,water.x,water.y))return false;const b=boats[boats.length-1];a.boat=b;a.x=b.x;a.y=b.y;
+// Choose a distant land tile as a scouting destination; only sail if there is a real shoreline target.
+let dest=null,score=0;for(let r=24;r<=90;r+=6){for(let k=0;k<24;k++){const ang=rr()*Math.PI*2,x=(b.x+Math.cos(ang)*r)|0,y=(b.y+Math.sin(ang)*r)|0;if(!wr(x,y)||!land(T[li(x,y)])||solid(x,y))continue;let waterWay=true;for(let q=3;q<r-3;q+=3){const xx=(b.x+Math.cos(ang)*q)|0,yy=(b.y+Math.sin(ang)*q)|0;if(!wr(xx,yy)||T[li(xx,yy)]>1){waterWay=false;break}}if(!waterWay)continue;const sc=r+(O[li(x,y)]?2:0);if(sc>score){score=sc;dest={x:x+.5,y:y+.5}}}if(dest)break}
+if(!dest){a.boat=null;return false}a.sailTarget=dest;a.doing="setting out by raft";return true}
+function aiUnstuck(a){
+ if(!a.ai&&!(a===P&&autopilot))return false;
+ if(a.boat&&a.sailTarget)return false;
+ if(!a.tgt){if(time>(a.idleWatchT||0)){if(a.idleWatchT&&time-(a.idleSince||time)>7&&!a.sl){a.th=0;think(a);if(!a.tgt)roam(a,12);a.idleSince=time}if(!a.idleWatchT)a.idleSince=time;a.idleWatchT=time+2.5}return false}
+ const t=a.tgt,dist=Math.hypot((t.x??a.x)-a.x,(t.y??a.y)-a.y);
+ if(dist<=Math.max(2,t.stand||1)){a.unstuckN=0;a.unstuckX=a.x;a.unstuckY=a.y;a.unstuckT=time+2.5;return false}
+ if(time<(a.unstuckT||0))return false;
+ const moved=Math.hypot(a.x-(a.unstuckX??a.x),a.y-(a.unstuckY??a.y));
+ if(a.unstuckT&&moved<.18){a.unstuckN=(a.unstuckN||0)+1;a.path=null;a.pk="";a.pi=0;a.rp=0;a.sk=0;
+  if(t.tile)a.bad[li(t.tile[0],t.tile[1])]=time+150;
+  a.tgt=null;a.tg_=null;a.hold=0;a.th=0;a.doing="discarding a blocked route";
+  if(a.unstuckN>=2){let spot=null;for(let r=1;r<=10&&!spot;r++)for(let y=-r;y<=r&&!spot;y++)for(let x=-r;x<=r;x++){if(Math.max(Math.abs(x),Math.abs(y))!==r)continue;const tx=(a.x|0)+x,ty=(a.y|0)+y;if(freeSpot(tx,ty)&&!actors.some(o=>o!==a&&al(o)&&Math.hypot(o.x-(tx+.5),o.y-(ty+.5))<.8)){spot={x:tx+.5,y:ty+.5};break}}
+   if(spot){a.x=spot.x;a.y=spot.y}a.unstuckN=0;a.th=0;think(a);if(!a.tgt)roam(a,16);a.doing="recovering and choosing a new route";
+  }
+  a.unstuckX=a.x;a.unstuckY=a.y;a.unstuckT=time+2.5;return true;
+ }else{a.unstuckN=0;a.unstuckX=a.x;a.unstuckY=a.y;a.unstuckT=time+2.5}
+ return false;
+}
+function aiStep(a,dt){if(aiUnstuck(a))return;if(a.civ>=0&&civs[a.civ]){const cc=civs[a.civ];cc.activity=cc.activity||{};cc.activity[a.gid]={doing:a.doing||"idle",x:a.x,y:a.y,t:time};a.knownActivity=cc.activity}a.mv=0;a.th-=dt;
+// Hard recovery for the player autopilot. This watches movement even when the
+// AI has no target (the previous watchdog only watched active targets).
+if(a===P&&autopilot&&time>(a.pilotWatchT||0)){
+ const moved=Math.hypot(a.x-(a.pilotWatchX??a.x),a.y-(a.pilotWatchY??a.y));
+ if(a.pilotWatchT&&moved<.12){
+  a.pilotStuck=(a.pilotStuck||0)+1;
+  a.path=null;a.pk="";a.pi=0;a.rp=0;a.sk=0;a.ck=.7;
+  if(a.tgt&&a.tgt.tile)a.bad[li(a.tgt.tile[0],a.tgt.tile[1])]=time+90;
+  a.tgt=null;a.tg_=null;a.hold=0;a.th=0;
+  a.doing="recovering from a blocked route";
+  // If simply choosing a new task did not work, move to the nearest clear
+  // walkable tile. This is a tiny unstuck correction, not long-distance travel.
+  if(a.pilotStuck>=3){
+   let spot=null;
+   for(let r=1;r<=7&&!spot;r++)for(let y=-r;y<=r&&!spot;y++)for(let x=-r;x<=r;x++){
+    if(Math.max(Math.abs(x),Math.abs(y))!==r)continue;
+    const tx=(a.x|0)+x,ty=(a.y|0)+y;
+    if(freeSpot(tx,ty)){spot={x:tx+.5,y:ty+.5};break}
+   }
+   if(spot){a.x=spot.x;a.y=spot.y}
+   a.pilotStuck=0;a.tgt=null;a.tg_=null;a.path=null;a.pk="";a.pi=0;a.rp=0;a.sk=0;a.th=0;a.hold=0;
+   roam(a,8);a.doing="finding a clear route";
+  }
+ }else if(moved>=.12)a.pilotStuck=0;
+ a.pilotWatchX=a.x;a.pilotWatchY=a.y;a.pilotWatchT=time+1.5;
+}
+if(a.boat&&aiBoatStep(a,dt))return;a.ct-=dt;if(a.tgt&&time>a.hold)a.tgt=null;if(a.sl){if(dark()<.3||a.hun<15||a.lastT>time-6)a.sl=0;else return}if(a.ct<=0){a.ct=.6;threat(a)}if(a.command==="stay"&&a.commander===P.gid){a.tgt=null;return}if(a.command==="follow"&&a.commander===P.gid){const lead=actors[a.commander];if(lead&&al(lead)&&Math.hypot(lead.x-a.x,lead.y-a.y)>3){a.tgt={x:lead.x,y:lead.y,stand:2};a.hold=time+3;a.doing="following "+lead.n}else a.tgt=null}if(!a.tgt&&a.th<=0)think(a);const t=a.tgt;if(!t)return;
+// Detect targets that make no movement progress; clear them and force a fresh decision.
+if(Math.hypot(t.x-a.x,t.y-a.y)>Math.max(2,t.stand||1)){if(time>(a.stuckCheckT||0)){const moved=Math.hypot(a.x-(a.stuckX??a.x),a.y-(a.stuckY??a.y));if(a.stuckCheckT&&moved<.22){a.stuckN=(a.stuckN||0)+1;a.path=null;a.pk="";a.rp=0;if(a.stuckN>=(a===P&&autopilot?1:2)){if(t.tile)a.bad[li(t.tile[0],t.tile[1])]=time+120;a.tgt=null;a.tg_=null;a.th=0;a.stuckN=0;a.doing="abandoning an unreachable task";return}}else a.stuckN=0;a.stuckX=a.x;a.stuckY=a.y;a.stuckCheckT=time+(a===P&&autopilot?1.8:3);}}if(a.tg_!==t){a.tg_=t;a.path=null;a.pk="";a.rp=0}
+if(t.an){if(t.an.hp<=0){a.tgt=null;return}t.x=t.an.x;t.y=t.an.y}if(t.act){if(!al(t.act)||Math.hypot(t.act.x-a.x,t.act.y-a.y)>70){a.tgt=null;return}t.x=t.act.x;t.y=t.act.y}
+if(Math.hypot(t.x-a.x,t.y-a.y)>t.stand){follow(a,t,dt);return}a.cd-=dt;if(a.cd<=0){a.cd=(.55+(1-a.tr.wrk)*.4)*(t.act?.8:1);act(a,t)}}
+function stepFar(a,dt){if(aiUnstuck(a))return;a.th-=dt;if(a.tgt&&time>a.hold)a.tgt=null;if(a.sl){if(dark()<.3||a.hun<15||a.lastT>time-6)a.sl=0;else return}if(!a.tgt&&a.th<=0)think(a);const t=a.tgt;if(!t)return;if(a.tg_!==t){a.tg_=t;a.path=null;a.pk=""}
+if(t.an){if(t.an.hp<=0){a.tgt=null;return}t.x=t.an.x;t.y=t.an.y}if(t.act){if(!al(t.act)){a.tgt=null;return}t.x=t.act.x;t.y=t.act.y}
+if(Math.hypot(t.x-a.x,t.y-a.y)>t.stand){const key=(t.x|0)+","+(t.y|0);if(!a.path||a.pk!=key){const r=astar(a.x|0,a.y|0,t.x|0,t.y|0,Math.floor(t.stand));a.pk=key;if(!r.ok&&!t.act&&!t.an){bad(a,t);return}a.path=r.p;a.pi=0}
+let m=a.spd*dt;while(m>0&&a.pi<a.path.length){const wp=a.path[a.pi],wx=wp%WS+.5,wy=(wp/WS|0)+.5,d=Math.hypot(wx-a.x,wy-a.y);if(d<=m){a.x=wx;a.y=wy;a.pi++;m-=d}else{a.x+=(wx-a.x)/d*m;a.y+=(wy-a.y)/d*m;m=0}}
+if(a.pi>=a.path.length&&Math.hypot(t.x-a.x,t.y-a.y)>t.stand){a.path=null;if(++a.sk>3)bad(a,t)}return}
+for(let n=0;n<Math.max(1,Math.round(dt/.55));n++){if(!a.tgt)break;act(a,t)}}
+function act(a,t){
+if(t.visit){const o=t.act;if(o&&al(o))chat(a,o);a.tgt=null;return}
+if(t.reclaim){reclaim(t.reclaim,a);a.tgt=null;return}
+if(t.sleep!=null){if(t.sleep)a.sl=1;a.doing=t.sleep?"sleeping":"sheltering";a.tgt=null;return}
+if(t.raid){raidAct(a,t.raid);return}
+if(t.wreck){wreck(a,t);return}
+if(t.chest!=null){chestAct(a,t);a.tgt=null;return}
+if(t.gift){take(a,"wood",8);drop(a,"wood",8,{t:0});a.tgt=null;return}
+if(t.act){atk(a,t.act,wdmg(a));return}
+if(t.an){hurtAn(a,t.an,wdmg(a)/3);return}
+if(t.tile){if(!hit(a,t.tile[0],t.tile[1]))a.tgt=null;return}a.tgt=null}
+// ---- AI behavior ----
+function match(a,k,i){const o=O[i];return k=="wood"?(o==1||o==7):k=="stone"?o==2:k=="wall"?T[i]==6&&!o:k=="iron_ore"?o==4:k=="berries"?(o==3&&season()!=3):k=="wheat"?(B[i]==14&&F[i]>=60):k=="crystal"?o==6:0}
+function remember(a,k,q){const l=a.known[k]=a.known[k]||[];if(!l.some(z=>z[0]==q[0]&&z[1]==q[1]))l.push(q);if(l.length>10)l.shift()}
+function fr(a,k,R){const cx=a.x|0,cy=a.y|0;for(let r=1;r<=R;r++){const l=[];for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!=r)continue;const x=cx+dx,y=cy+dy;if(!wr(x,y))continue;const i=li(x,y);if(a.bad[i]>time)continue;if(match(a,k,i))l.push([x,y])}if(l.length){const q=l[rr()*l.length|0];remember(a,k,q);return q}}return null}
+function memT(a,k){const l=a.known[k];if(!l)return null;let b=null,bd=1e9;a.known[k]=l.filter(q=>match(a,k,li(q[0],q[1])));for(const q of a.known[k]){if(a.bad[li(q[0],q[1])]>time)continue;const d=Math.hypot(q[0]-a.x,q[1]-a.y);if(d<bd){bd=d;b=q}}return b}
+function nearAn(a,R){let b=null,bd=R;for(const n of animals){if(Math.abs(n.x-a.x)>R||Math.abs(n.y-a.y)>R)continue;const d=Math.hypot(n.x-a.x,n.y-a.y);if(d<bd){bd=d;b=n}}return b}
+function aim(a,t,why){a.tgt={x:t[0]+.5,y:t[1]+.5,stand:1.6,tile:t};a.hold=time+8;a.doing=why}
+function roam(a,r){for(let k=0;k<48;k++){const x=a.x+(rr()*2-1)*r,y=a.y+(rr()*2-1)*r;if(wr(x|0,y|0)&&land(T[li(x|0,y|0)])&&!solid(x|0,y|0)){a.tgt={x,y,stand:.8};a.hold=time+12;a.doing="exploring";return}}for(let rad=1;rad<=10;rad++)for(let dy=-rad;dy<=rad;dy++)for(let dx=-rad;dx<=rad;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==rad)continue;const x=(a.x|0)+dx,y=(a.y|0)+dy;if(freeSpot(x,y)){a.tgt={x:x+.5,y:y+.5,stand:.8};a.hold=time+10;a.doing="finding a clear place to explore";return}}}
+function nearestStr(a,codes){let b=null,bd=1e9;for(const s of STR)if(codes.includes(s.t)){const d=Math.hypot(s.x-a.x,s.y-a.y);if(d<bd){bd=d;b=s}}return b}
+function fetchItem(a,k,n){if(a.civ<0&&!a.store)return false;for(const s of STR)if(s.t==12&&Math.hypot(s.x-a.base.x,s.y-a.base.y)<40){const i=li(s.x,s.y);if(!CH[i]||!canOpen(a,i))continue;let has=0;for(const q of CH[i])if(q&&(k=="food"?IT[q.i].f:q.i==k))has+=q.n;if(has>=1){a.tgt={x:s.x+.5,y:s.y+.5,stand:1.8,chest:i,want:k,n:n||4};a.hold=time+25;a.doing="fetching "+(k=="food"?"food":IT[k].n)+" from storage";return true}}return false}
+function gather(a,k,need){if(fetchItem(a,k,need))return;if(k=="leather"||k=="meat"){const an=nearAn(a,40);if(an){a.tgt={an,x:an.x,y:an.y,stand:1.1};a.hold=time+10;a.doing="hunting";return}return roam(a,30)}let t=fr(a,k,a.rad)||memT(a,k);if(!t&&(a.gf=(a.gf||0)+1)%3==0)t=fr(a,k,52);if(!t&&k=="stone"&&tr(a,"pick"))t=fr(a,"wall",a.rad);if(t)aim(a,t,"gathering "+IT[k].n);else roam(a,30)}
+function chestAct(a,t){const i=t.chest,box=CH[i];if(!box)return;const o={inv:box,seen:new Set()};if(t.dep){for(let j=0;j<a.inv.length;j++){const s=a.inv[j];if(!s||IT[s.i].du||IT[s.i].stack)continue;const keep={wood:14,stone:10,berries:4,meat:3,wheat:4,cooked:3,bread:3,iron:2,iron_ore:2,cloth:2,leather:2}[s.i]||0,ex=s.n-keep;if(ex>0){const l=add(o,s.i,ex);take(a,s.i,ex-l)}}if(!a.store)a.store=[];if(!a.store.includes(i))a.store.push(i);a.doing="stored surplus";return}
+if(!canOpen(a,i)){a.gr[CO[i]]=0}let left=t.n||4;for(let j=0;j<32&&left>0;j++){const s=box[j];if(s&&(t.want=="food"?IT[s.i].f:s.i==t.want)){const q=Math.min(left,s.n);if(IT[s.i].du){putSlot(a,{i:s.i,n:1,d:s.d});box[j]=null;left--}else{const l=add(a,s.i,q);s.n-=q-l;left-=q-l;if(s.n<=0)box[j]=null}}}a.doing="took supplies"}
+function stash(a){if(time<(a.stT||0))return false;a.stT=time+40;let ex=0;for(const s of a.inv)if(s&&!IT[s.i].du&&!IT[s.i].stack&&s.n>({wood:20,stone:16}[s.i]||8))ex++;if(!ex)return false;let b=null,bd=25;for(const s of STR)if(s.t==12){const i=li(s.x,s.y),d=Math.hypot(s.x-a.x,s.y-a.y);if(CH[i]&&canOpen(a,i)&&d<bd){bd=d;b=i}}if(b==null)return false;a.tgt={x:b%WS+.5,y:(b/WS|0)+.5,stand:1.8,chest:b,dep:1};a.hold=time+20;a.doing="storing surplus";return true}
+function done(a,id){if(STM[id]){if(STR.some(s=>s.t==STM[id]&&Math.hypot(s.x-a.base.x,s.y-a.base.y)<26)){a.cr.add(id);return true}return false}if(id=="house")return a.hs>=a.wantH;if(id=="farm")return a.fm>=(a.pt>=0?2:1);return a.cr.has(id)}
+function plan(a,g,dep){const r=RC[g];if(!r)return;for(const k in r.in)if(avail(a,k)<r.in[k]){if(RC[k]&&dep<4&&(!a.cr.has(k)||k=="iron"||k=="cloth"))return plan(a,k,dep+1);return gather(a,k,r.in[k])}
+if(r.st&&!stationNear(a,r.st)){const s=nearestStr(a,r.st==11?[11,19]:[r.st]);if(s){a.tgt={x:s.x+.5,y:s.y+.5,stand:2.2};a.hold=time+12;a.doing="heading to the "+IT[BI[s.t]].n;return}if(dep<4)return plan(a,{11:"workbench",13:"furnace",20:"anvil",21:"cookstation",19:"workbench2"}[r.st],dep+1);return}
+if(!(r.req||[]).every(q=>a.cr.has(q))){const q=r.req.find(z=>!a.cr.has(z));if(dep<5)return plan(a,q,dep+1);return}
+if(craft(a,g)=="ok"){a.doing="crafted "+r.n;snd("craft",a);if(PB[g]!=null&&g!="floor"&&g!="wall"&&g!="door"&&g!="stonewall"||g=="house")placeAI(a,g)}else a.doing="thinking"}
+function placeAI(a,g){for(let k=0;k<80;k++){const x=a.base.x+(rr()*20-10)|0,y=a.base.y+(rr()*16-8)|0;rot=rr()<.5?0:1;if(g=="bed"){let f=false;for(let n=0;n<30&&!f;n++){const bx=a.base.x+(rr()*14-7|0),by=a.base.y+(rr()*14-7|0);if(wr(bx,by)&&B[li(bx,by)]==1&&Rf[li(bx,by)]&&!O[li(bx,by)]){B[li(bx,by)]=22;STR.push({t:22,x:bx,y:by});take(a,"bed",1);f=true}}if(f){a.doing="made a bed";return}}
+if(canPut(g,x,y)&&put(a,g,x,y)){if(g=="farm")a.fm++;a.doing="built a "+IT[g].n;return}}}
+function shelter(a){if(a.shT>time)return a.shS;a.shT=time+20;let b=nearestStr(a,[22]);if(b&&Math.hypot(b.x-a.base.x,b.y-a.base.y)>45)b=null;if(!b){for(let dy=-12;dy<=12&&!b;dy++)for(let dx=-12;dx<=12&&!b;dx++){const x=(a.base.x|0)+dx,y=(a.base.y|0)+dy;if(wr(x,y)&&B[li(x,y)]==1&&Rf[li(x,y)])b={x,y}}}if(!b){b=nearestStr(a,[10]);if(b&&Math.hypot(b.x-a.base.x,b.y-a.base.y)>45)b=null}a.shS=b;return b}
+function bestFood(a){let j=-1,bf=0;for(let i=0;i<a.inv.length;i++){const s=a.inv[i];if(s&&IT[s.i].f>bf){bf=IT[s.i].f;j=i}}return j}
+function threat(a){if(ageOf(a)<12)return;let b=null,sw=wdmg(a),bd=sw>5?40:12;for(const o of nearby(a.x,a.y,bd)){if(o===a||!hostile(a,o)&&!avenge(a,o))continue;const d=Math.hypot(o.x-a.x,o.y-a.y);if(d<bd){bd=d;b=o}}if(!b)return;
+if(a.hp<35||(wdmg(b)>sw+8&&a.tr.cau>.5&&a.hp<70)||(a.tr.cau>.8&&wdmg(b)>sw)){a.tgt={x:clamp(a.x+(a.x-b.x)*3,2,WS-3),y:clamp(a.y+(a.y-b.y)*3,2,WS-3),stand:1.5};a.hold=time+4;a.doing="fleeing from "+b.n;return}
+if(a.tgt&&a.tgt.act===b)return;a.tgt={act:b,x:b.x,y:b.y,stand:1.2};a.hold=time+15;a.doing="fighting "+b.n}
+function ambushThink(a){
+ if(a.civ<0||!civs[a.civ]||ageOf(a)<14)return false;
+ const c=civs[a.civ],home=claims.find(q=>q.civ===c.id);if(!home)return false;
+ let threatCiv=null,threatDist=1e9,threatPos=null;
+ for(const e of civs){if(!e||e.dead||e.id===c.id)continue;
+  const declared=!!c.war[e.id]||!!e.war[c.id],planned=!!(e.raidTarget&&e.raidTarget.civ===c.id);
+  if(!declared&&!planned)continue;
+  for(const m of live(e)){const d=Math.hypot(m.x-home.x,m.y-home.y);if(d<threatDist){threatDist=d;threatCiv=e;threatPos=m}}
+ }
+ if(!threatCiv||threatDist>92){if(c.ambushPlan&&time>c.ambushPlan.until){c.ambushPlan=null;a.ambushPos=null}return false}
+ if(!c.ambushPlan||c.ambushPlan.enemy!==threatCiv.id)c.ambushPlan={enemy:threatCiv.id,since:time,until:time+100,home:{x:home.x,y:home.y}};
+ const planState=c.ambushPlan,enemy=live(threatCiv);
+ // Once the enemy reaches the settlement's outer ring, the whole adult force
+ // collapses onto the closest attackers instead of defending one at a time.
+ let target=null,td=1e9;for(const e of enemy){const d=Math.hypot(e.x-home.x,e.y-home.y);if(d<td){td=d;target=e}}
+ if(target&&td<=27){a.ambushPos=null;let nearest=null,nd=34;for(const e of enemy){const d=Math.hypot(e.x-a.x,e.y-a.y);if(d<nd){nd=d;nearest=e}}
+  if(nearest){a.tgt={act:nearest,x:nearest.x,y:nearest.y,stand:1.15};a.hold=time+16;a.doing="springing an ambush on "+nearest.n;return true}
+ }
+ // Before the strike, adults spread around the settlement perimeter. From the
+ // attackers' approach direction they take positions on the far/side flanks.
+ const members=live(c).filter(m=>ageOf(m)>=14),angle=Math.atan2((threatPos?.y??home.y)-home.y,(threatPos?.x??home.x)-home.x);
+ const idx=Math.max(0,members.findIndex(m=>m.gid===a.gid)),spread=(idx/Math.max(1,members.length))*Math.PI*2;
+ const theta=angle+Math.PI+spread*.72,radius=21+(idx%3)*3;
+ let pos=a.ambushPos;
+ if(!pos||time>(a.ambushPosUntil||0)){for(let r=0;r<8&&!pos;r++)for(let k=0;k<12;k++){const th=theta+k*Math.PI/6,x=Math.round(home.x+Math.cos(th)*(radius+r)),y=Math.round(home.y+Math.sin(th)*(radius+r));if(freeSpot(x,y)&&!actors.some(o=>o!==a&&al(o)&&Math.hypot(o.x-(x+.5),o.y-(y+.5))<.8)){pos={x:x+.5,y:y+.5};break}}a.ambushPos=pos;a.ambushPosUntil=time+18}
+ if(pos&&Math.hypot(a.x-pos.x,a.y-pos.y)>2.5){a.tgt={x:pos.x,y:pos.y,stand:1.4};a.hold=time+12;a.doing="quietly taking an ambush position outside the settlement";return true}
+ a.tgt=null;a.doing="watching the enemy approach from concealment";return true;
+}
+function defenseThink(a){
+if(a.civ<0||!civs[a.civ]||ageOf(a)<16)return false;const c=civs[a.civ],alrt=c.defenseAlert;if(!alrt||time>alrt.expires)return false;
+const home=claims.find(q=>q.civ===c.id)||{x:(actors[c.lead]||a).base.x,y:(actors[c.lead]||a).base.y};
+const enemy=actors[alrt.attacker];
+// If the attacker is still near the settlement, rally directly against them.
+if(enemy&&al(enemy)&&Math.hypot(enemy.x-home.x,enemy.y-home.y)<95){a.tgt={act:enemy,x:enemy.x,y:enemy.y,stand:1.25};a.hold=time+12;a.doing="rushing home to defend against "+enemy.n;return true;}
+// Otherwise return to the settlement immediately and guard it.
+if(Math.hypot(a.x-home.x,a.y-home.y)>5){a.tgt={x:home.x+.5,y:home.y+.5,stand:3};a.hold=time+12;a.doing="returning to defend the settlement";return true;}
+let intruder=null,bd=24;for(const o of nearby(home.x,home.y,bd)){if(o!==a&&al(o)&&(o.gid===alrt.attacker||hostile(a,o))){const d=Math.hypot(o.x-a.x,o.y-a.y);if(d<bd){bd=d;intruder=o;}}}
+if(intruder){a.tgt={act:intruder,x:intruder.x,y:intruder.y,stand:1.25};a.hold=time+12;a.doing="defending the settlement";return true;}
+a.tgt=null;a.doing="guarding the settlement after an attack";return true;
+}
+function avenge(a,o){const f=family(a);for(const k of f.kids.concat(f.par,f.sib,f.pt?[f.pt]:[]))if(al(k)&&k.last===o.gid&&time-k.lastT<25&&Math.hypot(k.x-a.x,k.y-a.y)<30)return true;return false}
+function enemyReadiness(target,cl){const defenders=live(target).filter(m=>Math.hypot(m.x-cl.x,m.y-cl.y)<18),armed=defenders.filter(m=>wdmg(m)>5),busy=Object.keys(target.war||{}).some(id=>+id!==target.id&&target.war[id]);const home=live(target).filter(m=>Math.hypot(m.x-cl.x,m.y-cl.y)<30).length;return{defenders:defenders.length,armed:armed.length,busy,home,distracted:armed.length===0||busy&&home<Math.max(2,live(target).length*.35)}}
+function orderRaid(c,target,mode,spot){if(!c||!target||c.dead||target.dead)return;const cl=spot||claims.find(x=>x.civ===target.id);if(!cl)return;c.raidTarget={civ:target.id,x:cl.x,y:cl.y,mode:mode||"attack",since:time,nextCheck:time+12};c.raidTarget.lastIntel=time;if(mode==="attack"&&!c.war[target.id])declareWar(c.id,target.id,"a scouting party identified a vulnerable settlement");const L=actors[c.lead];if(L)say(L,mode==="wait"?`we will wait for ${target.n} to become distracted, then strike their settlement.`:`${target.n} is our target. prepare to raid their settlement.`)}
+function raidPlan(a){const c=civs[a.civ];if(!c)return false;let best=null;if(c.raidTarget){const e=civs[c.raidTarget.civ];if(e&&!e.dead&&c.war[e.id])best=claims.filter(cl=>cl.civ===e.id).sort((x,y)=>Math.hypot(x.x-a.x,x.y-a.y)-Math.hypot(y.x-a.x,y.y-a.y))[0]||null}if(!best)for(const id in c.war){const e=civs[id];if(!e||e.dead)continue;for(const cl of claims)if(cl.civ==e.id){const d=Math.hypot(cl.x-a.x,cl.y-a.y);if(!best||d<Math.hypot(best.x-a.x,best.y-a.y))best=cl}}if(!best)return false;a.tgt={x:best.x+.5+(rr()*6-3),y:best.y+.5+(rr()*6-3),stand:2,raid:best};a.hold=time+150;a.doing="marching on "+civs[best.civ].n;return true}
+function raidAct(a,cl){const e=cl.civ,c=civs[a.civ];if(e==a.civ||!c.war[e]){a.tgt=null;return}let tg=null;for(let dy=-10;dy<=10&&!tg;dy++)for(let dx=-10;dx<=10;dx++){const x=cl.x+dx,y=cl.y+dy;if(!wr(x,y))continue;const i=li(x,y),b=B[i];if(b&&b!=1&&b!=15&&b!=16&&TO[i]==e+1){tg=[x,y];break}}
+if(tg){a.tgt={x:tg[0]+.5,y:tg[1]+.5,stand:1.6,wreck:tg,tile:null};a.hold=time+25;a.doing="raiding "+civs[e].n;return}
+const def=live(civs[e]).filter(m=>Math.hypot(m.x-cl.x,m.y-cl.y)<16&&wdmg(m)>5);if(!def.length&&live(c).some(m=>Math.hypot(m.x-cl.x,m.y-cl.y)<14))transferClaim(cl,a.civ,"its defenders fled");a.tgt=null}
+function wreck(a,t){const[x,y]=t.wreck,i=li(x,y),b=B[i];if(!b||b==15||b==16){a.tgt=null;return}H["w"+i]=(H["w"+i]||0)+1;snd("break",a);if(H["w"+i]<3)return;delete H["w"+i];const e=TO[i]-1;
+let looted=0;if(CH[i]){const o={inv:CH[i],seen:new Set()};for(const s of CH[i])if(s){if(IT[s.i].du){if(putSlot(a,s))looted++}else{const before=cnt(a,s.i);add(a,s.i,s.n);looted+=Math.max(0,cnt(a,s.i)-before)}}}if(looted&&e>=0&&civs[e])ev("loot",`${a.n} looted ${looted} item stack${looted===1?"":"s"} from ${civs[e].n}`,{who:[a.gid],civ:a.civ,loc:{x,y},n:e==P.civ||a.civ==P.civ});
+removeAt(a,x,y);if(e>=0&&civs[e]){annoy(a.civ,e,-8);civs[e].gr[a.civ]=(civs[e].gr[a.civ]||0)+1;CL.push({t:time,x:`${a.n} destroyed a ${IT[BI[b]]?IT[BI[b]].n:"structure"} of ${civs[e].n}`});if(b==14)ev("raid",`${a.n} of ${civs[a.civ].n} burned the fields of ${civs[e].n}`,{who:[a.gid],civ:a.civ,loc:{x,y},n:e==P.civ})}a.tgt=null;a.th=0}
+function reclaim(su,a){if(su.own>=0||!su.rec)return;if(a.civ<0||cnt(a,"wood")<10)return;take(a,"wood",10);su.own=a.civ;for(let j=-4;j<su.h+4;j++)for(let i=-4;i<su.w+4;i++){const x=su.x-(su.w>>1)+i,y=su.y-(su.h>>1)+j;if(!wr(x,y))continue;const k=li(x,y);if(B[k]==15)B[k]=2;else if(B[k]==16&&land(T[k]))B[k]=1}claims.push({x:su.x,y:su.y,civ:a.civ,r:3});ev("reclaim",`${civs[a.civ].n} reclaimed ${su.name}`,{who:[a.gid],civ:a.civ,loc:{x:su.x,y:su.y},imp:true,n:a.civ==P.civ})}
+function bestSword(a){return wdmg(a)}
+function meta(a){const c=a.civ>=0?civs[a.civ]:null,war=c&&Object.keys(c.war).length>0,military=!!(war||c&&c.law.conscript||a.tr.agg>.88);autoEquip(a);
+if(military&&ageOf(a)>=14){
+ // Work toward the strongest weapon the crafting tree can provide, not just the first sword.
+ if(wdmg(a)<28){plan(a,wdmg(a)>=18?"sword_i":wdmg(a)>=12?"sword_i":wdmg(a)>=5?"sword_s":"sword_w",0);autoEquip(a);if(a.tgt)return true;}
+ // Armor progression is cumulative: clothes -> leather -> chain -> iron.
+ if(armorOf(a)<8){const gear=armorOf(a)>=5?"iron_armor":armorOf(a)>=3?"iron_armor":armorOf(a)>=1?"leather_armor":"leather_armor";plan(a,gear,0);autoEquip(a);if(a.tgt)return true;}
+ // Shields are separate equipment and materially reduce incoming damage.
+ if(!a.eq.shield||IT[a.eq.shield.i].bl<.5){plan(a,"iron_shield",0);autoEquip(a);if(a.tgt)return true;}
+}
+if(war&&wdmg(a)>=12&&a.hp>60&&ageOf(a)>=16&&a.job!="farmer"&&rr()<.8&&raidPlan(a))return true;
+if(c&&c.law.ration&&a.hun<50&&fetchItem(a,"food",5))return true;
+if(c&&!war&&a.tr.cur>.5&&cnt(a,"wood")>=10&&time>(a.rcT||0)){a.rcT=time+120;let b=null,bd=160;for(const s of SU)if(s.rec&&s.own<0){const d=Math.hypot(s.x-a.base.x,s.y-a.base.y);if(d<bd){bd=d;b=s}}if(b){a.tgt={x:b.x+.5,y:b.y+.5,stand:3,reclaim:b};a.hold=time+160;a.doing="going to reclaim "+b.name;return true}}
+if((a.tr.cur+a.tr.amb>.9||a.pt<0&&ageOf(a)>=16&&ageOf(a)<50)&&time>a.vt&&time>240&&a.hun>60&&rr()<.3){a.vt=time+120;const cands=actors.filter(x=>al(x)&&x!==a&&ageOf(x)>=16&&(a.pt>=0||x.pt<0&&x.sex!=a.sex||a.tr.cur>.7)).sort((p,q)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(q.x-a.x,q.y-a.y)),o=cands[0]?cands[Math.min(cands.length-1,rr()*3|0)]:null;if(o){a.tgt={act:o,x:o.x,y:o.y,stand:2.5,visit:1};a.hold=time+100;a.doing="visiting "+o.n;return true}}return false}
+function smithHas(a,id){return !!a.inv.some(s=>s&&s.i===id)}
+function smithGive(a,to,id){if(!smithHas(a,id))return false;const left=add(to,id,1);if(left)return false;take(a,id,1);autoEquip(to);return true}
+function blacksmithAct(a){
+ const c=a.civ>=0?civs[a.civ]:null;if(!c)return false;
+ const members=live(c).filter(m=>m!==a&&ageOf(m)>=14).sort((x,y)=>Math.hypot(x.x-a.x,x.y-a.y)-Math.hypot(y.x-a.x,y.y));
+ // Hand out finished equipment before starting another project.
+ for(const m of members){
+  if(!m.eq.armor){for(const id of ["iron_armor","chain_armor","leather_armor","clothes"])if(smithGive(a,m,id)){a.doing="arming "+m.n+" with "+IT[id].n;return true}}
+  if(!m.eq.shield){for(const id of ["iron_shield","wood_shield"])if(smithGive(a,m,id)){a.doing="giving a shield to "+m.n;return true}}
+  if(wdmg(m)<=5){for(const id of ["sword_i","sword_s","sword_w"])if(smithGive(a,m,id)){a.doing="giving a weapon to "+m.n;return true}}
+  if(tr(m,"axe")===0){for(const id of ["axe_i","axe_s","axe_w"])if(smithGive(a,m,id)){a.doing="giving an axe to "+m.n;return true}}
+  if(tr(m,"pick")===0){for(const id of ["pick_i","pick_s","pick_w"])if(smithGive(a,m,id)){a.doing="giving a pickaxe to "+m.n;return true}}
+ }
+ // Keep the forge and workbench available, then make the best equipment the
+ // civilization has actually unlocked and can afford.
+ if(!stationNear(a,11)){plan(a,"workbench",0);a.doing="preparing the blacksmith's workbench";return true}
+ const needsArmor=members.some(m=>!m.eq.armor),needsShield=members.some(m=>!m.eq.shield),needsSword=members.some(m=>wdmg(m)<=5),needsAxe=members.some(m=>tr(m,"axe")===0),needsPick=members.some(m=>tr(m,"pick")===0);
+ let recipe=null;
+ if(needsArmor)recipe=unlocked(a,"iron_armor")?"iron_armor":unlocked(a,"chain_armor")?"chain_armor":"leather_armor";
+ else if(needsShield)recipe=unlocked(a,"iron_shield")?"iron_shield":"wood_shield";
+ else if(needsSword)recipe=unlocked(a,"sword_i")?"sword_i":unlocked(a,"sword_s")?"sword_s":"sword_w";
+ else if(needsAxe)recipe=unlocked(a,"axe_i")?"axe_i":unlocked(a,"axe_s")?"axe_s":"axe_w";
+ else if(needsPick)recipe=unlocked(a,"pick_i")?"pick_i":unlocked(a,"pick_s")?"pick_s":"pick_w";
+ if(recipe){plan(a,recipe,0);if(!a.tgt)a.doing="forging equipment for the civilization";return true}
+ // If basic gear is covered, establish the anvil so the smith can upgrade the
+ // whole settlement to iron equipment as materials become available.
+ if(!stationNear(a,20)){plan(a,"anvil",0);a.doing="building or stocking the forge";return true}
+ a.doing="maintaining the armory";return true;
+}
+function jobAct(a){const j=a.job;if(j=="blacksmith")return blacksmithAct(a);if(j=="woodcutter")return gather(a,"wood"),true;if(j=="miner")return gather(a,tr(a,"pick")>=2?"iron_ore":"stone"),true;if(j=="farmer"){if(a.fm<2&&cnt(a,"farm")+avail(a,"wood")>=3){plan(a,"farm",0);return true}return gather(a,"wheat"),true}if(j=="hunter")return gather(a,"meat"),true;if(j=="builder"){a.wantH=Math.max(a.wantH,a.hs+1);plan(a,"house",0);return true}
+if(j=="guard"){const cl=claims.find(x=>x.civ==a.civ);if(cl){a.tgt={x:cl.x+(rr()*14-7),y:cl.y+(rr()*14-7),stand:1};a.hold=time+10;a.doing="guarding the settlement";return true}}return false}
+function expeditionThink(a){
+if(a.civ<0||!civs[a.civ]||civs[a.civ].dead||ageOf(a)<16)return false;const c=civs[a.civ],members=live(c).filter(x=>ageOf(x)>=16&&x.hp>25);if(members.length<2)return false;
+let ex=c.expedition;if(!ex||time>ex.expires){if(ex&&ex.group)for(const g of ex.group){const m=actors[g];if(m){m.expRole=null;m.scav=null}}c.expedition=null;if(time<(c.nextExp||0))return false;
+const leader=actors[c.lead],curiosity=leader?leader.tr.cur:.5;if(rr()>(.18+curiosity*.38))return false;
+const candidates=members.filter(x=>!x.boat&&x.hun>65&&!x.expRole).sort((x,y)=>(y.tr.cur+y.tr.cau*.3)-(x.tr.cur+x.tr.cau*.3));if(!candidates.length)return false;
+const group=candidates.slice(0,members.length>=4?2:1);if(!group.length)return false;ex=c.expedition={leader:group[0].gid,group:group.map(x=>x.gid),started:time,expires:time+260,phase:"outbound"};c.nextExp=time+300+rr()*200;for(let i=0;i<group.length;i++){group[i].expRole=i===0?"leader":"escort";group[i].scav={phase:"search",home:{x:group[0].base.x,y:group[0].base.y},target:null,cool:0};say(group[i],i===0?`i think we should scout beyond our borders. come with me, ${group[1]?.n||""}.`:`i will join the expedition. let's look for other settlements.`,group[0]===group[i]?group[1]||group[0]:group[0])}}
+if(!ex||!ex.group.includes(a.gid))return false;const lead=actors[ex.leader];if(!lead||!al(lead)){c.expedition=null;return false}
+if(a.gid!==ex.leader){if(Math.hypot(a.x-lead.x,a.y-lead.y)>3){a.tgt={x:lead.x,y:lead.y,stand:2};a.hold=time+5;a.doing="traveling with the scouting party";return true}a.doing="exploring alongside the scout";return true}
+if(!a.boat&&tryAIBoat(a))return true;const done=scavengerThink(a);if(a.scav&&a.scav.phase==="return")ex.phase="returning";if(a.scav&&a.scav.finished&&time>=a.scav.finished){for(const g of ex.group){const m=actors[g];if(m){m.expRole=null;m.scav=null;if(m!==a){m.tgt=null;m.doing="back at the settlement"}}}c.expedition=null}
+return done;
+}
+function scavengerThink(a){
+if(a.civ<0||!civs[a.civ]||civs[a.civ].dead)return false;
+const c=civs[a.civ];if(!a.scav)a.scav={phase:"search",home:{x:a.base.x,y:a.base.y},target:null,cool:0};
+const sc=a.scav,leader=actors[c.lead],home=leader&&al(leader)?leader:{x:sc.home.x,y:sc.home.y};
+if(sc.phase==="search"){
+ if(!a.boat&&a.role==="scavenger"&&tryAIBoat(a))return true;
+ let found=null,fd=18;
+ for(const cl of claims){if(cl.civ===c.id||!civs[cl.civ]||civs[cl.civ].dead)continue;const d=Math.hypot(cl.x-a.x,cl.y-a.y);if(d<fd){fd=d;found={civ:cl.civ,x:cl.x,y:cl.y}}}
+ for(const o of actors){if(!al(o)||o.civ<0||o.civ===c.id||!civs[o.civ]||civs[o.civ].dead)continue;const d=Math.hypot(o.x-a.x,o.y-a.y);if(d<fd){fd=d;found={civ:o.civ,x:o.x,y:o.y}}}
+ if(found){const target=civs[found.civ];sc.target={civ:found.civ,x:found.x,y:found.y,pop:live(target).length,power:strength(target),foundAt:time};sc.phase="return";a.tgt={x:home.x,y:home.y,stand:3};a.hold=time+30;a.doing="returning to report a discovered tribe";return true}
+ if(Math.hypot(a.x-sc.home.x,a.y-sc.home.y)>105){sc.phase="return";sc.target=null;a.tgt={x:home.x,y:home.y,stand:3};a.hold=time+30;a.doing="returning from scouting";return true}
+ const r=58+rr()*55;roam(a,r);if(a.tgt){a.hold=time+18;a.doing="scavenging for other tribes"}return true;
+}
+if(sc.phase==="return"){
+ if(Math.hypot(a.x-home.x,a.y-home.y)>4){a.tgt={x:home.x,y:home.y,stand:3};a.hold=time+30;a.doing="returning to report to the tribe";return true}
+ if(sc.target){const t=sc.target,other=civs[t.civ];if(other&&!other.dead){if(!c.scoutReports)c.scoutReports=[];c.scoutReports.push({...t,reportedAt:time,scout:a.gid});if(c.scoutReports.length>20)c.scoutReports.shift();c.intel=c.intel||{};c.intel[t.civ]={...t,reportedAt:time,scout:a.gid};for(const g of c.mem){const member=actors[g];if(member&&member.ai){member.knownCivs=member.knownCivs||{};member.knownCivs[t.civ]={...t,reportedAt:time}}}const msg=`${fname(a)} discovered ${other.n} near ${t.x|0}, ${t.y|0} · population ${t.pop} · estimated strength ${Math.round(t.power)}`;ev("scout",msg,{who:[a.gid,c.lead],civ:c.id,loc:{x:t.x,y:t.y},imp:true,n:c.id===P.civ});if(leader&&al(leader))say(leader,`our scout found ${other.n} near ${t.x|0}, ${t.y|0}. they have about ${t.pop} people. we must decide what to do.`);
+ if(leader&&leader.ai&&!c.war[other.id]){const ratio=strength(c)/Math.max(1,strength(other)),rel=c.rel[other.id]||0,gr=c.gr[other.id]||0,agg=leader.tr.agg,read=enemyReadiness(other,{x:t.x,y:t.y}),unattended=read.armed===0&&read.home<=1,canWin=ratio>1.08,opportunist=agg>.38||gr>1||rel<-25;
+  // Weakly defended settlements are tempting targets even when the enemy is stronger.
+  if(unattended||opportunist&&canWin){orderRaid(c,other,"attack",claims.find(cl=>cl.civ===other.id&&Math.hypot(cl.x-t.x,cl.y-t.y)<20));}
+  else if(opportunist){orderRaid(c,other,"wait",claims.find(cl=>cl.civ===other.id&&Math.hypot(cl.x-t.x,cl.y-t.y)<20));ev("scout",`${c.n} marked ${other.n} for a future raid and will wait until its defenders are distracted`,{civ:c.id,loc:{x:t.x,y:t.y},imp:true,n:c.id===P.civ||other.id===P.civ});}
+  else if(leader.tr.loy>.55&&agg<.48&&rel>10&&!c.ally[other.id]){ally(c.id,other.id);}
+  else if(!c.trade[other.id]){c.trade[other.id]=time;other.trade[c.id]=time;ev("trade",`${c.n} established trade with ${other.n} after a scouting report`,{civ:c.id,imp:true,n:c.id===P.civ||other.id===P.civ});}
+ }}}
+ sc.target=null;sc.phase="search";sc.cool=time+18;sc.finished=time+18;a.tgt=null;a.doing="preparing for another scouting trip";return true;
+}
+return false;
+}
+function think(a){a.th=.5+rr()*.5;const age=ageOf(a);if(a.companion&&al(P)&&Math.hypot(a.x-P.x,a.y-P.y)>4.5){a.tgt={x:P.x,y:P.y,stand:2.5};a.hold=time+8;a.doing="staying close to you";return}
+if(age<12){const p=a.par.map(g=>actors[g]).find(al);a.doing=age<4?"toddling nearby":"playing";if(p&&Math.hypot(p.x-a.x,p.y-a.y)>5){a.tgt={x:p.x,y:p.y,stand:3};a.hold=time+8}else if(rr()<.4){a.tgt={x:a.base.x+rr()*8-4,y:a.base.y+rr()*8-4,stand:.8};a.hold=time+6}return}
+if(ambushThink(a))return;
+if(defenseThink(a))return;
+if(a.hun<62){const f=bestFood(a);if(f>=0){eat(a,f);return}if(fetchItem(a,"food",6))return;
+ // Only request help from someone who demonstrably has food; gathering remains the fallback.
+ if(a.hun<30&&time>(a.foodAskT||0)){const friend=nearby(a.x,a.y,5).find(o=>o!==a&&al(o)&&bestFood(o)>=0&&time>(o.foodRefuseT||0));if(friend){a.foodAskT=time+35;say(a,`${friend.n}, could you spare some food?`,friend);a.doing="asking a nearby person for food";}}
+ if(a.hun<68){let t=fr(a,"berries",Math.max(a.rad,42))||memT(a,"berries")||fr(a,"wheat",Math.max(a.rad,42))||memT(a,"wheat");if(t)return aim(a,t," urgently gathering food");const an=nearAn(a,48);if(an){a.tgt={an,x:an.x,y:an.y,stand:1.1};a.hold=time+18;a.doing="hunting for food";return}if(!a.tgt){roam(a,55);a.doing="searching farther away for food";return}}
+}
+const night=dark()>.5,bad=(WX.t=="storm"||WX.t=="snowstorm"||a.tp<-4)&&!atWar(a)&&a.hun>40;
+if((night&&a.hun>25&&a.hp>20)||bad){const s=shelter(a);if(s){const d=Math.hypot(s.x-a.x,s.y-a.y);if(d>1.5||night){a.tgt={x:s.x+.5,y:s.y+.5,stand:1.1,sleep:night?1:0};a.hold=time+25;a.doing=night?"heading to bed":"seeking shelter";return}a.doing="sheltering";return}}
+if(a.hun<55){let t=fr(a,"berries",a.rad)||fr(a,"wheat",a.rad)||memT(a,"wheat");if(t)return aim(a,t,"looking for food");const an=nearAn(a,30);if(an){a.tgt={an,x:an.x,y:an.y,stand:1.1};a.hold=time+10;a.doing="hunting";return}}
+if(expeditionThink(a))return;if(scavengerThink(a))return;
+if(meta(a))return;if(a.job&&jobAct(a))return;
+const eq=a.eq.armor;if(!eq&&a.tp<8&&a.cr.has("workbench")){plan(a,"clothes",0);if(a.tgt)return}
+if(stash(a))return;
+const g=a.ord.find(id=>!done(a,id));if(g)return plan(a,g,0);
+if(a.tr.gen>.7&&cnt(a,"wood")>=30&&Math.hypot(P.x-a.x,P.y-a.y)<35){a.tgt={x:P.x,y:P.y,stand:1.6,gift:1};a.hold=time+12;a.doing="bringing wood to someone in need";return}
+if(a.tr.wrk<.3&&rr()<.4){a.doing="resting";return}
+if((a.role=="explorer"||a.tr.cur>.7)&&rr()<.5){const I=ISL[rr()*ISL.length|0];return roam(a,34)}
+if(cnt(a,"wood")<40)return gather(a,"wood");if(cnt(a,"stone")<20)return gather(a,"stone");if(a.pt>=0&&ageOf(a)>=16&&a.fm<2&&rr()<.3)return plan(a,"farm",0);roam(a,12)}
+
+// ---- social: talk, relationships, families ----
+function say(a,t,b){a.say=t;a.sayT=time+5;TALK.push({t:time,f:a.n,to:b&&b!==a?b.n:"",x:t,a:a.gid,b:b?b.gid:-1});if(TALK.length>300)TALK.shift();if(b){a.conv.push({w:b.gid,t:time,s:t.slice(0,40)});if(a.conv.length>16)a.conv.shift()}}
+const relOf=(a,b)=>a.rl[b.gid]||0,relLabel=v=>v>60?"close friend":v>30?"friend":v<-60?"bitter enemy":v<-30?"rival":"acquaintance";
+function bump(a,b,v){a.rl[b.gid]=clamp((a.rl[b.gid]||0)+v,-100,100);b.rl[a.gid]=clamp((b.rl[a.gid]||0)+v*.8,-100,100)}
+function topics(a,b){const L=[],ca=a.civ>=0?civs[a.civ]:null,cb=b.civ>=0?civs[b.civ]:null,r=relOf(a,b),hos=hostile(a,b)||hostile(b,a);
+const T1=(k,t)=>L.push([k,t]);
+if(hos){T1("threat",`stay away from my people, ${b.n}`);if(ca&&cb)T1("war",`${ca.n} will crush ${cb.n}. you will pay, ${b.n}`);if(a.gr[b.gid]>time)T1("grudge",`you hurt me, ${b.n}. i will not forget it`);return L}
+if(r<-30&&a.tr.agg>.5)T1("argue",`i do not like you, ${b.n}. keep away from my things`);
+if(a.hun<35&&bestFood(b)>=0)T1("help",`${b.n}, i am starving. any food to spare?`);
+if(a.hp<50)T1("help",`i am hurt, ${b.n}. watch out for danger`);
+T1("greet",`hello ${b.n}, i am ${fname(a)}${ca?" of "+ca.n:""}`);T1("work",`i am ${a.doing}. and you, ${b.n}?`);
+if(kinOf(a,b)){const fl=family(a);T1("kin",fl.kids.includes(b)?`stay close to home, ${b.n}. i worry about you`:fl.par.includes(b)?`thank you for everything, ${b.n}`:`family sticks together, ${b.n}`)}
+if(ca&&ca===cb){const known=ca.intel||{};const enemyIds=Object.keys(known);if(enemyIds.length){const info=known[enemyIds[enemyIds.length-1]],enemy=civs[info.civ];if(enemy&&!enemy.dead)T1("intel",`our scouts located ${enemy.n} near ${info.x|0}, ${info.y|0}. population ${info.pop}; estimated strength ${Math.round(info.power)}. our leader is ${ca.raidTarget&&ca.raidTarget.civ==enemy.id?"planning a strike":"deciding what to do"}.`)}if(a.tgt&&a.tgt.raid)T1("orders",`i am marching to raid ${civs[a.tgt.raid.civ]?.n||"an enemy settlement"}`);const need=live(ca).length>ca.mem.reduce((s,g)=>s+actors[g].hs,0)*4;if(need)T1("civ",`${ca.n} needs more houses, ${b.n}`);T1("civ",`${ca.n} is a ${ca.stage} now. we must keep growing`);if(a.tr.amb>.7&&ca.lead!=a.gid)T1("leader",`i could lead ${ca.n} better than ${fname(actors[ca.lead])}, ${b.n}`);if(Object.keys(ca.war).length)T1("war",`the war with ${civs[+Object.keys(ca.war)[0]].n} worries me. stay armed`);if(ca.law.conscript)T1("law",`the law demands we all bear arms`)}
+else if(ca&&cb){T1("diplo",`how are things in ${cb.n}, ${b.n}? ${ca.n} wants peace`);if(ca.war[cb.id])T1("war",`our peoples are at war, ${b.n}. do not make this worse`);if(ca.ally[cb.id])T1("ally",`our alliance keeps both ${ca.n} and ${cb.n} safe`);const w=Object.keys(cb.war)[0];if(w!=null&&cb.id!=P.civ)T1("gossip",`i heard ${cb.n} is at war with ${civs[+w].n}`)}
+if(ca&&!cb&&ageOf(b)>=16&&(a.tr.amb>.4||ca.lead==a.gid))T1("recruit",`${b.n}, join ${ca.n}. we have food, shelter and safety`);
+const ks=Object.keys(a.known).filter(k=>a.known[k]&&a.known[k].length&&k!="structs");if(ks.length){const k=pick(ks),q=a.known[k][a.known[k].length-1];T1("resource",`i found ${IT[k].n} near ${q[0]}, ${q[1]}`)}
+const d=SU.filter(s=>s.disc&&Math.hypot(s.x-a.x,s.y-a.y)<150);if(d.length&&rr()<.3){const s=pick(d);T1("discovery",`have you seen ${s.name}? it lies near ${s.x}, ${s.y}`)}
+const o=actors.filter(x=>al(x)&&x!==a&&x!==b&&(a.rl[x.gid]||0)!=0&&Math.abs(a.rl[x.gid])>35);if(o.length){const x=pick(o);T1("gossip",a.rl[x.gid]>0?`${x.n} is a good friend of mine, ${b.n}`:`i do not trust ${x.n}. be careful, ${b.n}`)}
+if(a.tr.gen>.6&&cnt(a,"wood")>25&&cnt(b,"wood")<6)T1("gift",`you can have some wood, ${b.n}`);
+if(a.tr.agg<.3&&a.gr[b.gid]>0)T1("sorry",`i am sorry about before, ${b.n}`);return L}
+function chat(a,b){const L=topics(a,b),recent=new Set(a.conv.filter(c=>c.w==b.gid&&time-c.t<240).map(c=>c.t));let cand=L.filter(([k,t])=>!a.conv.some(c=>c.w==b.gid&&time-c.t<200&&c.s==t.slice(0,40)));if(!cand.length)cand=L;if(!cand.length)return;const[k,t]=pick(cand);say(a,t,b);
+const m=a.mem.met[b.gid]=(a.mem.met[b.gid]||0)+1;
+if(k=="help"&&b.ai){const f=bestFood(b);if(f>=0&&(b.tr.gen>.35||relOf(b,a)>20||kinOf(a,b))&&a.hun<35){const s=b.inv[f];take(b,s.i,1);add(a,s.i,1);say(b,`take this ${IT[s.i].n}, ${a.n}`,a);bump(a,b,10);setTimeout(()=>{if(al(a))say(a,`thank you, ${b.n}`,b)},1500)}else if(k=="help"&&b.tr.gen<.3)say(b,`not my problem, ${a.n}`,a)}
+else if(k=="gift"){take(a,"wood",8);add(b,"wood",8);bump(a,b,8);if(a.civ>=0&&b.civ>=0&&a.civ!=b.civ)annoy(a.civ,b.civ,3)}
+else if(k=="recruit"){const c=civs[a.civ];if(b.ai&&b.civ<0){const y=rr()<.25+relOf(b,a)/150+b.tr.loy*.1+(c.stage!="camp"?.15:0);if(y){join(b,c);say(b,`i accept. ${c.n} it is`,a)}else say(b,`not now, ${a.n}`,a)}else if(b===P&&P.civ<0&&!invs.some(v=>v.c==c.id)){invs.push({c:c.id,t:time});ev("diplomacy",`${a.n} invites you to join ${c.n}`,{who:[a.gid],civ:c.id,n:true})}}
+else if(k=="sorry"){a.gr[b.gid]=0;bump(a,b,6)}
+else if(k=="resource"&&b.ai){const l=a.known.wood||[];for(const kk in a.known)if(kk!="structs"&&a.known[kk].length){const q=a.known[kk][a.known[kk].length-1];remember(b,kk,q)}}
+else if((k=="intel"||k=="orders")&&b.ai&&a.civ>=0&&a.civ==b.civ){b.knownCivs=Object.assign(b.knownCivs||{},a.knownCivs||{});b.knownOrders=a.doing}
+else if(k=="argue"){bump(a,b,-4)}else if(k=="threat"||k=="war"||k=="grudge"){}else bump(a,b,2.5+(a.tr.gen+b.tr.gen)*1.5);
+if(a.civ>=0&&b.civ>=0&&a.civ!=b.civ&&civs[a.civ].trade[b.civ]){if(cnt(a,"wood")>18&&cnt(b,"stone")>12&&cnt(b,"wood")<10){take(a,"wood",6);add(b,"wood",6);take(b,"stone",4);add(a,"stone",4);bump(a,b,2);annoy(a.civ,b.civ,1.5)}}
+if(ageOf(a)>=16&&ageOf(b)>=16&&a.pt<0&&b.pt<0&&a.sex!=b.sex&&!kinOf(a,b)&&relOf(a,b)>40){a.lv[b.gid]=(a.lv[b.gid]||0)+7;b.lv[a.gid]=(b.lv[a.gid]||0)+7;if(a.lv[b.gid]>=21&&b.lv[a.gid]>=14){a.pt=b.gid;b.pt=a.gid;const m=a.sex=="m"?a:b,f=m===a?b:a;f.base={x:m.base.x,y:m.base.y};if(f.civ!=m.civ&&m.civ>=0)join(f,civs[m.civ]);ev("marriage",`${fname(a)} and ${fname(b)} became partners`,{who:[a.gid,b.gid],civ:m.civ,loc:{x:a.x|0,y:a.y|0},n:a===P||b===P})}}}
+let discT=0;
+function socialTick(){buildGrid();for(const a of actors){if(a.dead)continue;if(!a.ai){if(a.sex=="f"&&a.pt>=0&&ageOf(a)>=18&&ageOf(a)<42&&time>(a.bt||0)){const partner=actors[a.pt];if(al(partner)&&Math.hypot(partner.x-a.x,partner.y-a.y)<14&&a.kids.length<5&&rr()<.12&&canRaise(a,partner)){a.bt=time+DAY*.8;birth(a,partner)}else a.bt=time+10}continue;}
+if(a.civ<0&&ageOf(a)>=16&&time>90&&time>a.jc){a.jc=time+20+rr()*10;let bc=null,bd=90;for(const c of civs)if(!c.dead)for(const g of c.mem){const m=actors[g],d=Math.hypot(m.x-a.x,m.y-a.y);if(d<bd){bd=d;bc=c}}
+if(bc){if(bc.lead==P.gid){if(!pend.some(p=>p.g==a.gid)&&relOf(a,P)>=0){pend.push({g:a.gid,c:bc.id,t:time});say(a,`may i join ${bc.n}, ${P.n}?`,P);ev("diplomacy",`${a.n} asked to join ${bc.n}`,{who:[a.gid],civ:bc.id,n:true})}}else if(rr()<.35+a.tr.gen*.2+a.tr.loy*.1&&(a.rl[bc.lead]||0)>-30){join(a,bc);say(a,`i am joining ${bc.n}!`,actors[bc.lead])}}
+else if(a.cr.has("workbench")&&rr()<.1+a.tr.amb*.25&&!actors.some(x=>0)){const c=mkCiv(a);say(a,`i am founding ${c.n}. who will follow?`)}}
+if(a.civ>=0&&time>(a.lvT||0)){a.lvT=time+60;const c=civs[a.civ];if(c.lead!=a.gid&&((a.rl[c.lead]||0)<-45&&rr()<.3||a.tr.loy<.25&&(c.rel&&Object.keys(c.war).length&&a.tr.cau>.6)&&rr()<.2)){leave(a)}}
+if(a.sex=="f"&&a.pt>=0&&ageOf(a)>=18&&ageOf(a)<42&&time>(a.bt||0)){const p=actors[a.pt];if(al(p)&&Math.hypot(p.x-a.x,p.y-a.y)<14&&a.kids.length<5&&rr()<.12&&canRaise(a,p)){a.bt=time+DAY*.8;birth(a,p)}else a.bt=time+10}
+if(a.lod>1)continue;let b=null,bd=5;for(const o of nearby(a.x,a.y,5)){if(o===a)continue;const d=Math.hypot(o.x-a.x,o.y-a.y);if(d<bd){bd=d;b=o}}
+if(b&&time>a.tc&&(time>b.tc||b===P)){a.tc=time+9+rr()*9;if(b!==P)b.tc=time+6;
+// Hungry inhabitants explicitly ask nearby people for food; generosity and trust govern the answer.
+if(a.ai&&b.ai&&a.hun<42&&bestFood(b)>=0&&time>(a.foodAskT||0)&&time>(b.foodRefuseT||0)){a.foodAskT=time+32;say(a,a.hun<18?`please, ${b.n}, i have not eaten. do you have anything?`:`${b.n}, could you spare some food?`,b);
+const f=bestFood(b),rel=relOf(b,a),generosity=b.tr.gen||0,greedy=generosity<.24,rude=b.tr.agg>.78;
+const willing=f>=0&&!greedy&&!rude&&(rel>=-10||kinOf(a,b))&&(rr()<(.48+generosity*.42+(rel>35?.22:0)+(kinOf(a,b)?.2:0)));
+if(willing){const q=b.inv[f],qty=Math.min(q.n, a.hun<18?2:1);take(b,q.i,qty);add(a,q.i,qty);say(b,`here, take ${qty} ${IT[q.i].n}.`,a);say(a,`thank you, ${b.n}. i owe you.`,b);bump(a,b,5);bump(b,a,4)}
+else {b.foodRefuseT=time+45;say(b,greedy?`i need to keep my food for myself, ${a.n}.`:rude?`get your own food, ${a.n}.`:`sorry, i cannot spare any right now, ${a.n}.`,a);if(a.hun<12){if(rr()<.55){say(a,`please... i am starving.`,b);a.doing="begging for food"}else if(a.tr.agg>.55||a.tr.amb>.7){bump(a,b,-18);a.gr[b.gid]=time+90;say(a,`you will regret leaving me hungry, ${b.n}.`,b);if(a.tr.agg>.78&&Math.hypot(a.x-b.x,a.y-b.y)<3){a.tgt={act:b,x:b.x,y:b.y,stand:1.2};a.hold=time+8;a.doing="angry over refused food"}}}}
+} else chat(a,b)}}
+if(time>discT){discT=time+3;for(const s of SU)if(!s.disc&&Math.hypot(s.x-P.x,s.y-P.y)<16){s.disc=1;ST.disc++;MARKS.push({x:s.x,y:s.y,t:"structure",n:s.name});ev("discover",`you discovered ${s.name}`,{who:[P.gid],loc:{x:s.x,y:s.y},imp:true,n:true})}
+for(const I of ISL)if(!I.disc&&Math.hypot(I.x-P.x,I.y-P.y)<I.r+10){I.disc=1;MARKS.push({x:I.x,y:I.y,t:"island",n:I.name});ev("discover",`you discovered ${I.name}`,{who:[P.gid],loc:{x:I.x,y:I.y},imp:true,n:true})}}}
+
+// ---- settings, keybinds, input ----
+const KBD={up:"w",down:"s",left:"a",right:"d",interact:"e",inventory:"i",craft:"c",map:"m",book:"t",civ:"v",eat:"f",drop:"q",pause:"p",rotate:"r",settings:"escape",zoomin:"=",zoomout:"-",sleep:"z",boat:"b",s1:"1",s2:"2",s3:"3",s4:"4",s5:"5",s6:"6",s7:"7",s8:"8"},KBN={up:"move up",down:"move down",left:"move left",right:"move right",interact:"interact / board / sleep",inventory:"inventory",craft:"crafting",map:"world map",book:"world book",civ:"civilization",eat:"eat",drop:"drop item",pause:"pause",rotate:"rotate building",settings:"settings",zoomin:"zoom in",zoomout:"zoom out",sleep:"sleep nearby",boat:"boat storage",s1:"hotbar 1",s2:"hotbar 2",s3:"hotbar 3",s4:"hotbar 4",s5:"hotbar 5",s6:"hotbar 6",s7:"hotbar 7",s8:"hotbar 8"};
+let KB=Object.assign({},KBD),SET={ui:1,ter:2,part:1,auto:1,spd:1,autoEquip:1};
+try{Object.assign(KB,JSON.parse(localStorage.getItem("civexp_kb")||"{}"));Object.assign(SET,JSON.parse(localStorage.getItem("civexp_set")||"{}"))}catch(e){}
+const saveSet=()=>{try{localStorage.setItem("civexp_kb",JSON.stringify(KB));localStorage.setItem("civexp_set",JSON.stringify(SET))}catch(e){}};
+const UIS={iq:"",cq:"",bq:"",chq:"",icat:"all",ccat:"basics",btab:"people",ctab:"overview",stab:"general",sel:null,mk:"home",pf:-1,evi:-1,rb:null,dead:0,evf:"all",crv:{}};
+const keys={};let mx=0,my=0,ml=false,pcd=0,cv,ctx,cw,ch,D=1,chI=null,ISEL=null;
+function tip(s){const e=$("tt");e.textContent=s;e.style.display="block";clearTimeout(tip.t);tip.t=setTimeout(()=>e.style.display="none",3800)}
+const mtile=()=>[((mx-cw/2)/zoom+cam.x*16)/16,((my-ch/2)/zoom+cam.y*16)/16];
+const PANS=["inv","cr","bk","cl","mp","st","ch","pf"];
+function closeAll(){for(const q of PANS)$(q).style.display="none";chI=null}
+function togg(id){const v=$(id).style.display=="block";closeAll();if(!v)$(id).style.display="block";snd("ui");uiNow()}
+const actOf=k=>{for(const a in KB)if(KB[a]==k)return a;return null};
+function uiHB(){const h=P.inv.slice(0,8).map((s,j)=>slot(s,j,"hb",j==P.sel,j+1)).join("");sh("hb",h)}
+function slot(s,j,w,on,num){const d=s?IT[s.i]:null,du=s&&d.du?Math.max(0,(s.d||0)/d.du):0,tt=s?`${d.n}${d.r?" ("+RNAME[d.r]+")":""}${s.d!=null?" · durability "+s.d+"/"+d.du:""}${d.d?"\n"+d.d:""}${s.m&&typeof s.m=="string"?"\n"+s.m:""}`:"empty";return`<div class="sl${on?" on":""}" data-w="${w}" data-j="${j}" title="${tt.replace(/"/g,"'")}"${d&&d.r?` style="border-color:${RAR[d.r]}"`:""}>${num?`<u>${num}</u>`:""}${s?`<img src="${IC[s.i]}"><b>${s.n>1?s.n:""}</b>`:""}${du&&du<1?`<i style="width:${du*30}px;background:${du>.5?"#7fcf6a":du>.2?"#d2a82f":"#d2452f"}"></i>`:""}</div>`}
+function arrOf(w){if(w=="inv"||w=="hb")return P.inv;if(w=="ch"){if(typeof chI=="string")return boats[+chI.slice(1)]?boats[+chI.slice(1)].inv:null;return CH[chI]}return null}
+function slotClick(w,j,e){const A=arrOf(w);if(w.startsWith("eq")){const sl=w.slice(3);if(ISEL){const s=arrOf(ISEL.w)[ISEL.j];if(s&&IT[s.i].slot==sl){arrOf(ISEL.w)[ISEL.j]=P.eq[sl];P.eq[sl]=s;snd("place")}ISEL=null}else unequip(P,sl);return}
+if(!A)return;const s=A[j];
+if(e.shiftKey&&s){const to=w=="ch"?P.inv:(chI!=null&&arrOf("ch")?arrOf("ch"):(j<8?P.inv:P.inv));let ok=false;if(w=="ch"||chI!=null&&arrOf("ch")){const dst=w=="ch"?P:{inv:arrOf("ch"),seen:new Set()};if(w=="ch")theftCheck();const sl2=A[j];if(sl2.d!=null||IT[sl2.i].du){if(putSlot(dst,{...sl2}))A[j]=null}else{const l=add(dst,sl2.i,sl2.n,sl2.m);if(l)sl2.n=l;else A[j]=null}}else{const lo=j<8?8:0,hi=j<8?32:8;for(let k=lo;k<hi&&!ok;k++)if(!P.inv[k]){P.inv[k]=s;P.inv[j]=null;ok=true}}snd("ui");return}
+if(!ISEL){if(s){ISEL={w,j};snd("ui")}return}
+const B2=arrOf(ISEL.w),s2=B2[ISEL.j];if(ISEL.w=="ch"&&w!="ch"||w=="ch"&&ISEL.w!="ch")theftCheck();
+if(s&&s2&&s.i==s2.i&&stk(s.i)>1&&s.m==null&&s2.m==null&&!(w==ISEL.w&&j==ISEL.j)){const k=Math.min(stk(s.i)-s.n,s2.n);s.n+=k;s2.n-=k;if(!s2.n)B2[ISEL.j]=null}else{B2[ISEL.j]=s;A[j]=s2}ISEL=null;snd("ui")}
+function theftCheck(){if(typeof chI=="number")theft(chI)}
+function theft(i){const o=actors[CO[i]];if(o&&o!==P&&!canOpen(P,i)){o.gr[P.gid]=time+120;o.rl[P.gid]=(o.rl[P.gid]||0)-20;if(o.civ>=0&&P.civ>=0&&o.civ!=P.civ){annoy(o.civ,P.civ,-12);civs[o.civ].gr[P.civ]=(civs[o.civ].gr[P.civ]||0)+1}ev("theft",`${P.n} took items from ${o.n}'s chest`,{who:[P.gid,o.gid],civ:P.civ,loc:{x:P.x|0,y:P.y|0},n:true})}}
+function splitSlot(w,j){const A=arrOf(w);if(!A)return;const s=A[j];if(!s||s.n<2||s.m!=null)return;const k=s.n>>1;for(let i=0;i<A.length;i++)if(!A[i]){A[i]={i:s.i,n:k};s.n-=k;snd("ui");return}}
+function sortArr(A){const L=A.filter(Boolean);L.sort((a,b)=>CATS.indexOf(IT[a.i].cat)-CATS.indexOf(IT[b.i].cat)||a.i.localeCompare(b.i));const out=[];for(const s of L){const last=out[out.length-1];if(last&&last.i==s.i&&stk(s.i)>1&&last.n+s.n<=stk(s.i)&&last.m==null&&s.m==null)last.n+=s.n;else out.push(s)}A.fill(null);out.forEach((s,i)=>A[i]=s)}
+// ---- player ----
+function boatLeave(){const b=P.boat;for(let r=1;r<=2;r++)for(let k=0;k<8;k++){const x=Math.floor(P.x+DX[k]*r),y=Math.floor(P.y+DY[k]*r);if(freeSpot(x,y)){P.x=x+.5;P.y=y+.5;P.boat=null;tip("you stepped ashore");snd("place");return}}tip("no shore nearby")}
+function interact(){if(P.boat)return boatLeave();
+const bed=STR.find(s=>s.t==22&&Math.hypot(s.x+.5-P.x,s.y+.5-P.y)<2.5);if(bed){if(dark()<.25){tip("you are not tired. beds help once night falls");return}P.sl=1;tip("you fall asleep. any movement wakes you");return}
+const r=boats.find(q=>Math.hypot(q.x-P.x,q.y-P.y)<2.6);if(r){P.boat=r;P.x=r.x;P.y=r.y;tip("on board. wasd to sail, e to land, b for storage");snd("splash");return}
+const c=STR.find(s=>s.t==12&&Math.hypot(s.x+.5-P.x,s.y+.5-P.y)<3);if(c){openChest(li(c.x,c.y));return}
+const su=SU.find(s=>s.rec&&s.own<0&&Math.hypot(s.x-P.x,s.y-P.y)<9);if(su){if(P.civ<0)tip("found a civilization first (v), then reclaim "+su.name);else if(cnt(P,"wood")<10)tip("reclaiming "+su.name+" costs 10 wood");else reclaim(su,P);return}
+const o=nearby(P.x,P.y,3.2).find(a=>a!==P);if(o){showProfile(o.gid);return}tip("nothing to interact with")}
+function openChest(i){closeAll();chI=i;$("ch").style.display="block";snd("ui");uiNow()}
+function boatStore(){if(!P.boat||!P.boat.inv){tip(P.boat?"this raft has no storage":"board a boat first");return}closeAll();chI="b"+boats.indexOf(P.boat);$("ch").style.display="block";uiNow()}
+function shoot(){const[tx,ty]=mtile(),d=Math.hypot(tx-P.x,ty-P.y)||1,h=P.inv[P.sel];if(!cnt(P,"arrow")){tip("you need arrows");return}take(P,"arrow",1);useTool(P,"bow");projs.push({x:P.x,y:P.y,vx:(tx-P.x)/d*15,vy:(ty-P.y)/d*15,o:P.gid,dm:IT[h.i].dm,life:1.1});snd("shoot",P)}
+function playerAct(){const[tx,ty]=mtile(),x=tx|0,y=ty|0,held=P.inv[P.sel],hd=held?IT[held.i]:null;if(hd&&hd.ranged){shoot();return}const reach=hd&&hd.reach?hd.reach:2.8;if(Math.hypot(x+.5-P.x,y+.5-P.y)>Math.max(3.4,reach))return;
+let ac=null;for(const o of nearby(P.x,P.y,5))if(o!==P&&Math.hypot(o.x-tx,o.y-ty)<.9&&Math.hypot(o.x-P.x,o.y-P.y)<reach)ac=o;if(ac)return atk(P,ac,wdmg(P));
+let an=null;for(const n of animals)if(Math.hypot(n.x-tx,n.y-ty)<.8&&Math.hypot(n.x-P.x,n.y-P.y)<reach+.3)an=n;if(an)return hurtAn(P,an,wdmg(P)/3);
+const i=li(x,y);if(B[i]==12){if(chI!=i)openChest(i);ml=false;return}if(tr(P,"shovel")&&dig(i,x,y))return;hit(P,x,y)}
+function dig(i,x,y){const t=TR.find(q=>!q.dug&&q.x==x&&q.y==y);if(!t)return false;H["t"+i]=(H["t"+i]||0)+1;snd("mine",P);useTool(P,"shovel");if(H["t"+i]>=5){t.dug=1;ST.dug++;B[i]=12;CH[i]=Array(32).fill(null);const o={inv:CH[i],seen:new Set()};CO[i]=-1;CA[i]="s";STR.push({t:12,x,y});add(o,"gold",3+rr()*8|0);add(o,"iron",2+rr()*4|0);add(o,"crystal",rr()*3|0);if(rr()<.4)add(o,"sword_i",1);if(rr()<.3)add(o,"compass",1);if(rr()<.5)add(o,"map",1);if(rr()<.3)add(o,"scroll",1);ev("treasure","you dug up a buried treasure chest! open it",{who:[P.gid],loc:{x,y},imp:true,n:true});snd("craft")}return true}
+function rclick(){const[tx,ty]=mtile(),x=tx|0,y=ty|0;if(useItem(P,P.sel)){uiNow();return}if(Math.hypot(x+.5-P.x,y+.5-P.y)<5)removeAt(P,x,y)}
+function throwItem(){const s=P.inv[P.sel];if(!s)return;const[tx,ty]=mtile(),d=Math.hypot(tx-P.x,ty-P.y)||1;drop(P,s.i,1,{thr:[(tx-P.x)/d,(ty-P.y)/d],t:4,d:s.d,m:s.m});s.n--;if(s.n<=0)P.inv[P.sel]=null;snd("ui")}
+let stp=0,sleepFast=0,autopilot=false;
+function playerTick(dt){const p=P;if(p.dead||autopilot)return;let dx=(keys[KB.right]?1:0)-(keys[KB.left]?1:0),dy=(keys[KB.down]?1:0)-(keys[KB.up]?1:0);p.mv=0;
+if(p.sl){if(dx||dy||dark()<.12||p.hun<15||p.hitT>time-1){p.sl=0}else{p.doing="sleeping";return}}
+if(dx||dy){const d=Math.hypot(dx,dy),t=T[(p.y|0)*WS+(p.x|0)];let sp;if(p.boat){const b=BS[p.boat.k];sp=b.sp*(WX.t=="storm"?.8:1);const ox=p.x,oy=p.y;mvB(p,dx/d*sp*dt,dy/d*sp*dt);const dd=Math.hypot(p.x-ox,p.y-oy);if(dd>0){ST.sailed+=dd;p.boat.du-=dd*.02*(1+WX.i*3);if(p.boat.du<=0){const i=boats.indexOf(p.boat);if(p.boat.inv)for(const s of p.boat.inv)if(s)dropSlot(p,s);boats.splice(i,1);p.boat=null;tip("your boat fell apart!");snd("break",p)}}}
+else{sp=p.spd=4.4;sp*=(t==1?.6:t==8?.75:1)*(isSnow()?.9:1)*(p.tp<-3?.8:1);mv(p,dx/d*sp*dt,dy/d*sp*dt)}p.ph+=dt*sp;p.mv=1;if(dx)p.fl=dx;stp+=dt*sp;if(stp>1.3){stp=0;snd(p.boat?"splash":"step",p)}}
+if(p.boat){if(WX.t=="storm"&&rr()<dt*.5)mvB(p,(rr()-.5)*.2,(rr()-.5)*.2);p.boat.x=p.x;p.boat.y=p.y}
+if(ml&&time>pcd){const h=p.inv[p.sel],hd=h?IT[h.i]:null;pcd=time+(hd&&hd.ranged?.7:hd&&hd.reach?.6:.45);playerAct()}
+if(p.cq.length){const q=p.cq[0];q.t+=dt;if(q.t>=.6){p.cq.shift();const r=craft(p,q.id);if(r=="ok"){snd("craft");ST.crafted+=0}else tip("could not craft "+RC[q.id].n+": "+r)}}
+reveal()}
+// ---- hover & description ----
+function describe(){const[tx,ty]=mtile(),x=tx|0,y=ty|0;if(!wr(x,y)||P.dead)return"";const i=li(x,y),held=P.inv[P.sel],hd=held?IT[held.i]:null;for(const o of nearby(tx,ty,1))if(o!==P&&Math.hypot(o.x-tx,o.y-ty)<.9)return`${fname(o)} (${o.civ>=0?civs[o.civ].n:"no civ"}) · ${hostile(P,o)||o.gr[P.gid]>time?"hostile":"click to attack, e to talk"}`;
+for(const n of animals)if(Math.hypot(n.x-tx,n.y-ty)<.8)return"hunt animal";const b=B[i],o=O[i];
+if(hd&&hd.pl)return"place "+hd.n+(hd.boat?" on water":"");if(b==12)return`open ${CN[i]||"chest"}`;if(b==22)return"bed. press e near it to sleep";if(b==14)return F[i]>=60?"harvest wheat":"growing wheat";if(b==11||b==19||b==13||b==20||b==21)return IT[BI[b]].n;
+if(o==1||o==7)return"chop tree"+(tr(P,"axe")?"":" (slow by hand)");if(o==2)return"mine rock";if(o==3)return season()==3?"bare bush":"pick berries";if(o==4)return tr(P,"pick")>=2?"mine iron ore":"iron ore (needs stone pickaxe)";if(o==6)return"crystal (needs iron pickaxe)";if(T[i]==6)return tr(P,"pick")?"mine stone wall":"stone wall (needs pickaxe)";
+for(const r of boats)if(Math.hypot(r.x-tx,r.y-ty)<1)return"boat. e to board";const su=SU.find(s=>s.disc&&Math.hypot(s.x-tx,s.y-ty)<s.w/2+2);if(su)return su.name+(su.rec&&su.own<0?" · e nearby to reclaim":"");return""}
+// ---- ui ----
+let uiT=0;function uiNow(){uiT=0}
+function sh(id,h){const e=$(id);if(e._h!==h){e._h=h;e.innerHTML=h}}
+const vis=id=>$(id).style.display=="block",tabs=(n,list,cur)=>list.map(t=>`<button data-a="tab:${n}:${t}" class="${t==cur?"on":""}">${t}</button>`).join(" ");
+function ui(){const p=P;$("hp").style.width=clamp(p.hp,0,100)+"%";$("hu").style.width=clamp(p.hun,0,100)+"%";$("tpb").style.width=clamp((p.tp+10)*3.3,0,100)+"%";$("tpb").style.background=p.tp<0?"#6aa8e8":p.tp>22?"#e8742a":"#d2b84a";uiHB();
+const c=p.civ>=0?civs[p.civ]:null,tt=ageOf(p)<16?"minor":"adult";$("inf").innerHTML=`${fname(p)} · age ${ageOf(p)|0} (${stageOf(p)})<br>${dstr(time)} · ${hour()|0}:00 · ${WX.t}<br>${c?`<span style="color:${c.col}">■</span> ${c.n} (${c.stage}, ${c.mem.length}) ${c.lead==p.gid?"· you lead":""}${Object.keys(c.war).length?' · <span class="no">at war</span>':""}`:"no civilization (v)"}${p.boat?`<br>sailing · boat ${(p.boat.du/BS[p.boat.k].du*100)|0}%`:""}${`<br>position: ${p.x|0}, ${p.y|0} · zoom ${zoom.toFixed(1)}x`}${pend.length+invs.length+offers.length?`<br><span class="ok">${pend.length+invs.length+offers.length} requests (v)</span>`:""}${p.cq.length?`<br>crafting ${RC[p.cq[0].id].n} (${p.cq.length})`:""}${autopilot?`<br><span class="ok">ai autopilot active</span>`:""}`;
+if(vis("inv"))uiInv();if(vis("cr"))uiCraft();if(vis("bk"))uiBook();if(vis("cl"))uiCiv();if(vis("ch"))uiChest();if(vis("st"))uiSet();if(vis("mp"))uiMap();if(vis("pf"))uiProf();mmDraw()}
+function uiInv(){const q=UIS.iq.toLowerCase(),cat=UIS.icat,eqs=["armor","shield"].map(sl=>`<div class="sl" data-w="eq:${sl}" data-j="0" title="${sl}">${P.eq[sl]?`<img src="${IC[P.eq[sl].i]}">`:`<small>${sl}</small>`}</div>`).join(""),held=P.inv[P.sel];
+sh("invb",`<div>equipment: ${eqs} held: ${held?IT[held.i].n:"hands"} · armor ${armorOf(P)} · warmth +${warmOf(P)}</div><div>${["all",...CATS.slice(0,0),"material","food","tool","weapon","armor","building","misc"].map(c=>`<button data-a="tab:icat:${c}" class="${c==cat?"on":""}">${c}</button>`).join(" ")} <button data-a="sortinv:0">sort bag</button> <button data-a="quickstack:0">quick stack to chests</button> <button data-a="autoequip:0">equip best</button></div><div class="g">${P.inv.map((s,j)=>{if(s&&(q&&!IT[s.i].n.includes(q)||cat!="all"&&IT[s.i].cat!=cat))return`<div class="sl dim" data-w="inv" data-j="${j}">${slot(s,j,"inv").replace(/^<div[^>]*>/,"").replace(/<\/div>$/,"")}</div>`;return slot(s,j,"inv",j==P.sel&&j<8?true:ISEL&&ISEL.w=="inv"&&ISEL.j==j)}).join("")}</div><small>click two slots to swap · shift-click quick transfer · right-click splits a stack · slots 1-8 are your hotbar</small>`)}
+function chestSrc(i){return typeof i=="string"?{inv:boats[+i.slice(1)]&&boats[+i.slice(1)].inv,name:"boat storage",own:-1}:{inv:CH[i],name:CN[i]||"chest",own:CO[i]}}
+function uiChest(){const s=chestSrc(chI);if(!s.inv||(typeof chI=="number"&&Math.hypot(chI%WS+.5-P.x,(chI/WS|0)+.5-P.y)>7)){closeAll();return}const q=UIS.chq.toLowerCase(),o=s.own>=0?actors[s.own]:null,mine=!o||o===P||(o&&o.civ>=0&&o.civ==P.civ);
+sh("chb",`<b>${s.name}</b>${o?` · owner ${o.n} · ${CA[chI]=="s"?"shared with civilization":"private"}`:""}${typeof chI=="number"&&o===P?` <button data-a="access:0">${CA[chI]=="s"?"make private":"share with civ"}</button>`:""}<br><button data-a="takeall:0">take all</button> <button data-a="depall:0">quick deposit</button> <button data-a="sortch:0">sort</button> ${typeof chI=="number"&&mine?`<input id="chn" placeholder="rename" size="10"> <button data-a="rename:0">name</button>`:""}<div class="g">${s.inv.map((it2,j)=>it2&&q&&!IT[it2.i].n.includes(q)?`<div class="sl dim" data-w="ch" data-j="${j}"></div>`:slot(it2,j,"ch",ISEL&&ISEL.w=="ch"&&ISEL.j==j)).join("")}</div><b>your bag</b><div class="g">${P.inv.map((it2,j)=>slot(it2,j,"inv",ISEL&&ISEL.w=="inv"&&ISEL.j==j)).join("")}</div>`)}
+function uiCraft(){const q=UIS.cq.toLowerCase(),cat=UIS.ccat,fav=P.fav;const ids=Object.keys(RC).filter(id=>(!q||RC[id].n.toLowerCase().includes(q)||id.toLowerCase().includes(q))&&(q?true:cat=="favorites"?fav[id]:cat=="all"||cat==RC[id].cat));
+const rows=ids.map(id=>{const r=RC[id],d=IT[id];if(!unlocked(P,id)){const m=Object.keys(r.in).filter(k=>!P.seen.has(k)).map(k=>IT[k].n),qq=(r.req||[]).filter(k=>!P.cr.has(k)).map(k=>RC[k]?RC[k].n:k);return`<div class="rc lk"><b>${r.n}</b> · <span class="no">undiscovered recipe</span>${r.lock&&!P.cr.has("_"+r.lock)?" · find an ancient scroll":""}${m.length?" · find "+m.join(", "):""}${qq.length?" · craft "+qq.join(", ")+" first":""}</div>`}
+const ms=Object.keys(r.in).map(k=>`<span class="${avail(P,k)>=r.in[k]?"ok":"no"}">${IT[k].n} ${avail(P,k)}/${r.in[k]}</span>`).join(", "),stn=r.st&&!stationNear(P,r.st),sn={11:"workbench",13:"furnace",19:"improved workbench",20:"anvil",21:"cooking station"}[r.st];
+return`<div class="rc"><button data-a="fav:${id}" title="favorite">${fav[id]?"★":"☆"}</button> <b style="color:${d.r?RAR[d.r]:"inherit"}">${r.n}</b>${r.o>1?" x"+r.o:""} ${r.st?`<small class="${stn?"no":"ok"}">[${sn}]</small>`:"<small>[by hand]</small>"}<br><small>${r.d}</small><br>${ms}<br><button data-a="craft:${id}">craft</button> <button data-a="qcraft:${id}">queue x5</button></div>`}).join("");
+sh("crb",`<div>${["favorites","all",...CATS].map(c=>`<button data-a="tab:ccat:${c}" class="${c==cat?"on":""}">${c}</button>`).join(" ")}</div>${P.cq.length?`<div>queue: ${P.cq.map(x=>RC[x.id].n).join(", ")} <button data-a="clearq:0">clear</button></div>`:""}${rows||"<small>nothing here</small>"}`)}
+function showProfile(g){UIS.pf=g;closeAll();$("pf").style.display="block";uiNow()}
+function uiAdventure(){const near=actors.filter(a=>a!==P&&al(a)&&Math.hypot(a.x-P.x,a.y-P.y)<12).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y));const target=near[0];const water=Array.from({length:8},(_,k)=>{const x=(P.x|0)+DX[k]*2,y=(P.y|0)+DY[k]*2;return wr(x,y)&&T[li(x,y)]<=1}).some(Boolean);const pets=animals.filter(n=>n.owner===P.gid).length;sh("adb",`<b>exploration</b><br><button data-a="fish:0" ${water?"":"disabled"}>fish nearby water</button> <button data-a="camp:0">set up camp</button><br><button data-a="arena:0">start arena challenge</button> <button data-a="merc:0">hire mercenary (5 gold)</button><hr><b>animals</b><br>pets following you: ${pets}<br><button data-a="tame:0">tame nearby animal (3 berries)</button><hr><b>people</b><br>${target?`nearest: ${fname(target)} · ${Math.hypot(target.x-P.x,target.y-P.y).toFixed(1)} tiles<br><button data-a="follow:0">ask nearby family/friend to follow</button> <button data-a="stay:0">ask followers to stay</button><br><button data-a="possess:0">possess nearest AI</button> <button data-a="spectate:0">spectate nearest AI</button> <button data-a="returnview:0">return to player</button>`:"no one nearby"}<br><small>more systems will appear here as they are added.</small>`)}
+function fishNow(){let ok=false;for(let k=0;k<8;k++){const x=(P.x|0)+DX[k]*2,y=(P.y|0)+DY[k]*2;if(wr(x,y)&&T[li(x,y)]<=1)ok=true}if(!ok){tip("get closer to a river, lake, or ocean");return}if(cnt(P,"wood")<1){tip("you need 1 wood to make a simple fishing rod");return}take(P,"wood",1);const n=1+(rr()<.35?1:0);add(P,"fish",n);tip(`you caught ${n} fish`);ev("discovery",`${P.n} went fishing and caught ${n} fish`,{who:[P.gid],loc:{x:P.x|0,y:P.y|0}})}
+function campNow(){const x=P.x|0,y=P.y|0;let placed=false;for(let r=1;r<4&&!placed;r++)for(let dy=-r;dy<=r&&!placed;dy++)for(let dx=-r;dx<=r;dx++){const xx=x+dx,yy=y+dy,i=li(xx,yy);if(wr(xx,yy)&&land(T[i])&&!O[i]&&!B[i]){B[i]=10;STR.push({t:10,x:xx,y:yy});placed=true;break}}if(placed){if(cnt(P,"wood")>=2)take(P,"wood",2);tip("you set up a temporary campfire")}else tip("there is no room nearby")}
+function tameAnimal(){const n=animals.find(n=>!n.owner&&Math.hypot(n.x-P.x,n.y-P.y)<3);if(!n){tip("get close to an untamed animal");return}if(cnt(P,"berries")<3){tip("you need 3 berries");return}take(P,"berries",3);n.owner=P.gid;n.dx=0;n.dy=0;tip("the animal trusts you and will follow");ev("discovery",`${P.n} tamed an animal`,{who:[P.gid],loc:{x:P.x|0,y:P.y|0}})}
+function possessNearest(){const a=actors.filter(a=>a!==P&&a.ai&&!a.dead&&Math.hypot(a.x-P.x,a.y-P.y)<12).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[0];if(!a){tip("no AI nearby to possess");return}const old=P;old.ai=true;old.tgt=null;P=a;P.ai=false;P.tgt=null;autopilot=false;$ ("pilotBtn").textContent="ai play: off";cam.x=P.x;cam.y=P.y;tip(`you are now controlling ${fname(P)}`);closeAll()}
+function spectateNearest(){const a=actors.filter(a=>a!==P&&!a.dead&&Math.hypot(a.x-P.x,a.y-P.y)<100).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[0];if(!a){tip("no nearby AI to spectate");return}UIS.track=a.gid;tip(`spectating ${fname(a)} — press adventures again to return to yourself`);}
+function uiProf(){const a=actors[UIS.pf];if(!a){closeAll();return}const f=family(a),L=x=>x?`<span class="r" data-a="prof:${x.gid}">${x.dead?"† ":""}${fname(x)}</span>`:"none",Ls=l=>l.length?l.map(L).join(", "):"none",c=a.civ>=0?civs[a.civ]:null;const rel=Object.keys(a.rl).filter(k=>Math.abs(a.rl[k])>25).sort((x,y)=>Math.abs(a.rl[y])-Math.abs(a.rl[x])).slice(0,6).map(k=>`${L(actors[k])} (${relLabel(a.rl[k])})`).join(", ")||"none",evs=EV.filter(e=>e.who.includes(a.gid)).slice(-6).reverse();
+sh("pfb",`<b>${fname(a)}</b> ${a.dead?"† died "+dstr(a.dt)+" ("+a.why+")":""}<br>age ${ageOf(a)|0} (${stageOf(a)}) · ${a.sex=="m"?"male":"female"} · ${a===P?"you":a.ai?"inhabitant":"player"}<br>personality: ${tlabel(a)} · role: ${a.role}${a.job?" · job: "+a.job:""}<br>civilization: ${c?`<span class="r" data-a="civ:${c.id}">${c.n}</span> ${c.lead==a.gid?"(leader)":""}`:"none"}<br>${a.dead?"":`doing: ${a.doing} · hp ${a.hp|0} · food ${a.hun|0}% · temp ${a.tp|0}°<br>`}<br><b>family</b><br>partner: ${L(f.pt)}<br>parents: ${Ls(f.par)}<br>grandparents: ${Ls(f.gp)}<br>siblings: ${Ls(f.sib)}<br>children: ${Ls(f.kids)}<br>grandchildren: ${Ls(f.gk)}<br>reputation of the ${a.sur} family: ${famRep(a.sur)}<br><br><b>relationships</b><br>${rel}<br><br><b>inventory</b><br>${a.inv.filter(Boolean).map(s=>IT[s.i].n+" x"+s.n).join(", ")||"empty"}<br><br><b>history</b><br>${evs.map(e=>`<div class="r" data-a="evt:${EV.indexOf(e)}">${dstr(e.t)}: ${e.x}</div>`).join("")||"none"}<br><br>${a!==P&&!a.dead?`<button data-a="talkto:${a.gid}">talk</button> <button data-a="track:${a.gid}">track</button>${P.civ>=0&&civs[P.civ].lead==P.gid&&a.civ!=P.civ?` <button data-a="invite:${a.gid}">invite</button>`:""}`:""}`)}
+function famRep(s){let v=0;for(const a of actors)if(a.sur==s&&!a.dead)v+=a.kids.length+(a.civ>=0&&civs[a.civ].lead==a.gid?5:0);return v>12?"renowned":v>5?"respected":"modest"}
+
+// ---- world book, civ management, map, settings ----
+let TCN={},cvCache={t:-9,id:-1,v:null};
+function civStats(c){if(cvCache.id==c.id&&time-cvCache.t<3)return cvCache.v;const v={houses:0,farms:0,chests:0,stations:0,food:0,wood:0,stone:0,iron:0,gold:0};const seen=new Set();for(const cl of claims)if(cl.civ==c.id){const R=Math.floor(cl.r);for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const x=cl.x+dx,y=cl.y+dy;if(!wr(x,y))continue;const i=li(x,y);if(seen.has(i))continue;seen.add(i);const b=B[i];if(b==3)v.houses++;else if(b==14)v.farms++;else if(b==12){v.chests++;if(CH[i])for(const s of CH[i])if(s)acc(v,s)}else if(b==11||b==19||b==13||b==20||b==21)v.stations++}}
+for(const a of live(c))for(const s of a.inv)if(s)acc(v,s);cvCache={t:time,id:c.id,v};return v}
+function acc(v,s){const d=IT[s.i];if(d.f)v.food+=s.n*(d.f>=30?2:1);else if(s.i=="wood")v.wood+=s.n;else if(s.i=="stone")v.stone+=s.n;else if(s.i=="iron")v.iron+=s.n;else if(s.i=="gold")v.gold+=s.n}
+const LNK=x=>x?`<span class="r" data-a="prof:${x.gid}">${x.dead?"† ":""}${fname(x)}</span>`:"none";
+function uiBook(){const t=UIS.btab,q=UIS.bq.toLowerCase();let h=tabs("btab",["people","civs","timeline","family","places","stats","combat","talk"],t)+"<br>";
+if(t=="people"){h+=`<label><input type="checkbox" data-a="deadtog:0" ${UIS.dead?"checked":""}> include the dead</label><br>`;for(const a of actors.filter(a=>(UIS.dead||!a.dead)&&(!q||fname(a).includes(q)||a.role.includes(q)||(a.civ>=0&&civs[a.civ].n.includes(q)))).slice(0,160))h+=`<div class="r" data-a="prof:${a.gid}">${a.dead?"† ":""}${fname(a)} · ${ageOf(a)|0} · ${a.civ>=0?civs[a.civ].n:"no civ"} · ${a.dead?"died "+a.why:a.doing}</div>`}
+else if(t=="civs"){if(UIS.cv!=null&&civs[UIS.cv]){const c=civs[UIS.cv],s=civStats(c);h+=`<button data-a="civ:-1">back</button><br><b style="color:${c.col}">${c.n}</b> (${c.cn}) ${c.dead?"· collapsed":""}<br>stage: ${c.stage} · population ${c.mem.length} (peak ${c.peak}) · territory ${TCN[c.id]||0} tiles · founded ${dstr(c.t0)}<br>leader: ${LNK(actors[c.lead])}<br>strength ${strength(c)|0} · buildings: ${s.houses} houses, ${s.farms} farms, ${s.chests} chests, ${s.stations} stations · siege engines ${STR.filter(z=>z.civ==c.id&&[24,25,26].includes(z.t)).length}<br>allies: ${Object.keys(c.ally).map(i=>civs[i].n).join(", ")||"none"} · wars: ${Object.keys(c.war).map(i=>civs[i].n).join(", ")||"none"}<br>members: ${live(c).map(LNK).join(", ")}<br><b>history</b>${EV.filter(e=>e.civ==c.id).slice(-12).reverse().map(e=>`<div class="r" data-a="evt:${EV.indexOf(e)}">${dstr(e.t)}: ${e.x}</div>`).join("")}`}
+else for(const c of civs.filter(c=>(UIS.dead||!c.dead)&&(!q||c.n.includes(q)))){h+=`<div class="r" data-a="civ:${c.id}"><span style="color:${c.col}">■</span> ${c.n} · ${c.stage} · pop ${c.mem.length} · ${c.dead?"collapsed":"led by "+(actors[c.lead]?actors[c.lead].n:"none")}</div>`}h+=`<br><label><input type="checkbox" data-a="deadtog:0" ${UIS.dead?"checked":""}> include collapsed</label>`}
+else if(t=="timeline"){const e=EV[UIS.evi];if(e)h+=`<div class="box"><b>${dstr(e.t)}</b> · ${e.type}<br>${e.x}<br>people: ${e.who.map(g=>LNK(actors[g])).join(", ")||"none"}<br>civilization: ${e.civ>=0&&civs[e.civ]?civs[e.civ].n:"none"}<br>location: ${e.loc?`${e.loc.x}, ${e.loc.y} <button data-a="jump:${e.loc.x}:${e.loc.y}">show on world</button>`:"unknown"}</div>`;h+=["all","war","peace","civ","birth","death","marriage","discover","leader","capture","stage"].map(f=>`<button data-a="evf:${f}" class="${UIS.evf==f?"on":""}">${f}</button>`).join(" ")+"<br>";for(let i=EV.length-1,n=0;i>=0&&n<150;i--){const x=EV[i];if(UIS.evf!="all"&&x.type!=UIS.evf)continue;if(q&&!x.x.includes(q))continue;n++;h+=`<div class="r" data-a="evt:${i}">${dstr(x.t)}: ${x.x}</div>`}}
+else if(t=="family"){const f=family(P);h+=`<b>${fname(P)}</b> · your family tree<br>grandparents: ${f.gp.map(LNK).join(", ")||"none"}<br>parents: ${f.par.map(LNK).join(", ")||"none"}<br>partner: ${LNK(f.pt)}<br>siblings: ${f.sib.map(LNK).join(", ")||"none"}<br>children: ${f.kids.map(LNK).join(", ")||"none"}<br>grandchildren: ${f.gk.map(LNK).join(", ")||"none"}<br>descendants: ${descendants(P).length}<br><br><b>previous characters</b><br>${LIN.map(g=>`<div>${LNK(actors[g])} ${actors[g].dead?"died "+dstr(actors[g].dt):""}</div>`).join("")||"none yet"}<br><b>your line</b><br>${descendants(actors[LIN[0]!=null?LIN[0]:P.gid]).map(LNK).slice(0,60).join(", ")||"none"}`}
+else if(t=="places"){h+="<b>discovered structures</b>";for(const s of SU.filter(s=>s.disc))h+=`<div class="r" data-a="jump:${s.x}:${s.y}">${s.name} (${s.cat}) · ${s.x}, ${s.y}${s.rec?s.own>=0?" · claimed by "+civs[s.own].n:" · reclaimable":""}</div>`;h+="<br><b>discovered islands</b>";for(const s of ISL.filter(s=>s.disc))h+=`<div class="r" data-a="jump:${s.x}:${s.y}">${s.name} · ${s.x}, ${s.y}</div>`;h+=`<br>${SU.filter(s=>s.disc).length}/${SU.length} structures · ${ISL.filter(s=>s.disc).length}/${ISL.length} islands`}
+else if(t=="stats"){const lv=actors.filter(al),tot={food:0,wood:0,stone:0,iron:0,gold:0};for(const a of lv)for(const s of a.inv)if(s)acc(tot,s);for(const i in CH)if(CH[i])for(const s of CH[i])if(s)acc(tot,s);h+=`<b>population</b>: ${lv.length} living (${lv.filter(a=>ageOf(a)<16).length} children, ${lv.filter(a=>ageOf(a)>=60).length} elders), ${actors.length-lv.length} dead<br>births ${EV.filter(e=>e.type=="birth").length} · deaths ${EV.filter(e=>e.type=="death").length} · marriages ${EV.filter(e=>e.type=="marriage").length}<br><b>resources in the world</b>: food ${tot.food} · wood ${tot.wood} · stone ${tot.stone} · iron ${tot.iron} · gold ${tot.gold}<br><b>season</b>: ${SEAN[season()]} · ${WX.t}<br><br><b>civilization rankings</b>`;const rk=civs.filter(c=>!c.dead).sort((a,b)=>b.mem.length-a.mem.length);rk.forEach((c,i)=>h+=`<div class="r" data-a="civ:${c.id}">${i+1}. <span style="color:${c.col}">■</span> ${c.n} · pop ${c.mem.length} · strength ${strength(c)|0} · territory ${TCN[c.id]||0}</div>`);if(!rk.length)h+="<div>no civilizations yet</div>"}
+else if(t=="combat"){h+=CL.slice(-100).reverse().map(e=>`<div>${dstr(e.t)}: ${e.x}</div>`).join("")||"no fighting yet"}
+else if(t=="talk"){h+=TALK.slice(-120).reverse().map(l=>`<div>${dstr(l.t)}: ${l.a!=null&&actors[l.a]?`<span class="r" data-a="prof:${l.a}">${l.f}</span>`:`<b>${l.f}</b>`}${l.to?" → "+(actors[l.b]?`<span class="r" data-a="prof:${l.b}">${l.to}</span>`:l.to):""}: ${l.x}</div>`).join("")||"nobody has spoken yet"}
+sh("bkb",h)}
+function uiCiv(){const c=P.civ>=0?civs[P.civ]:null,t=UIS.ctab;let rq="";for(const p of pend)rq+=`<div>${actors[p.g].n} wants to join <button data-a="acc:${p.g}">accept</button> <button data-a="rej:${p.g}">decline</button></div>`;for(const v of invs)rq+=`<div>invited to ${civs[v.c].n} <button data-a="join:${v.c}">join</button></div>`;offers.forEach((o,i)=>rq+=`<div>${civs[o.c].n} offers ${o.k=="peace"?"peace":"an alliance"} <button data-a="offer:acc:${i}">accept</button> <button data-a="offer:rej:${i}">decline</button></div>`);
+if(!c){sh("clb",`<b>you have no civilization</b><br>found one to claim territory, recruit followers and sign treaties. name it above, then:<br><button data-a="found:0">found a civilization here</button><hr>${rq||"no requests"}<hr><small>stages: 1 person camp · 2-3 tribe · 4-15 settlement · 16+ village</small>`);return}
+const s=civStats(c),lead=c.lead==P.gid;let h=tabs("ctab",["overview","diplomacy","military","economy","council","jobs"],t)+"<br>"+(rq?rq+"<hr>":"");
+if(t=="overview"){h+=`<b style="color:${c.col}">${c.n}</b> (${c.cn}) · ${c.stage}<br>population ${c.mem.length} · leader ${LNK(actors[c.lead])}<br>territory ${TCN[c.id]||0} tiles in ${claims.filter(x=>x.civ==c.id).length} claims<br>buildings: ${s.houses} houses, ${s.farms} farms, ${s.chests} chests, ${s.stations} stations · siege engines ${STR.filter(z=>z.civ==c.id&&[24,25,26].includes(z.t)).length}<br>food supply ${s.food} · wood ${s.wood} · stone ${s.stone} · iron ${s.iron} · gold ${s.gold}<br>military strength ${strength(c)|0}<br>allies: ${Object.keys(c.ally).map(i=>civs[i].n).join(", ")||"none"}<br>enemies: ${Object.keys(c.war).map(i=>civs[i].n).join(", ")||"none"}<br><button data-a="leave:0">leave civilization</button><br><b>history</b>${EV.filter(e=>e.civ==c.id).slice(-10).reverse().map(e=>`<div class="r" data-a="evt:${EV.indexOf(e)}">${dstr(e.t)}: ${e.x}</div>`).join("")}`}
+else if(t=="diplomacy"){h+=lead?"":"<small>only the leader can conduct diplomacy</small><br>";for(const o of civs.filter(o=>!o.dead&&o!==c)){const r=Math.round(c.rel[o.id]||0),w=!!c.war[o.id],a=!!c.ally[o.id];h+=`<div class="box"><span style="color:${o.col}">■</span> <b>${o.n}</b> · ${o.stage} · pop ${o.mem.length} · strength ${strength(o)|0}<br>relations ${r} (${r>40?"friendly":r<-40?"hostile":"neutral"}) ${w?'<span class="no">at war</span>':""} ${a?'<span class="ok">allied</span>':""} ${c.trade[o.id]?"· trade pact":""}<br>${lead?(w?`<button data-a="peace:${o.id}">offer peace</button> <button data-a="surr:${o.id}">surrender</button>`:`<button data-a="war:${o.id}">declare war</button>`)+(a?` <button data-a="unally:${o.id}">break alliance</button>`:` <button data-a="ally:${o.id}">propose alliance</button>`)+(c.trade[o.id]?"":` <button data-a="trade:${o.id}">trade agreement</button>`)+` <button data-a="tribute:${o.id}">demand tribute</button> <button data-a="give:${o.id}">offer tribute</button> <button data-a="terr:${o.id}">demand territory</button>`:""}</div>`}if(civs.filter(o=>!o.dead).length<2)h+="no other civilizations are known yet"}
+else if(t=="military"){const arm=live(c).filter(a=>wdmg(a)>5);h+=`strength ${strength(c)|0} · ${arm.length} armed of ${c.mem.length}<br>${live(c).map(a=>`${LNK(a)}: ${wslot(a)?IT[wslot(a).i].n:"unarmed"}, armor ${armorOf(a)}, hp ${a.hp|0}`).join("<br>")}<br><button data-a="law:conscript" class="${c.law.conscript?"on":""}">conscription ${c.law.conscript?"on":"off"}</button> <small>all adults arm themselves</small><br><small>war parties march on enemy claims, destroy buildings and capture undefended territory</small>`}
+else if(t=="economy"){const jb={};for(const a of live(c)){const k=a.job||(a.doing.split(" ")[0]);jb[k]=(jb[k]||0)+1}h+=`food ${s.food} (${(s.food/Math.max(1,c.mem.length)).toFixed(1)} per person) · wood ${s.wood} · stone ${s.stone} · iron ${s.iron} · gold ${s.gold}<br>activity: ${Object.entries(jb).map(([k,v])=>k+" "+v).join(", ")}<br>houses ${s.houses} (room for ${s.houses*4+2}) · farms ${s.farms}<br>population ${c.mem.length} ${c.mem.length>s.houses*4+2?'<span class="no">housing short</span>':""}${s.food<c.mem.length*2?' <span class="no">food short</span>':""}`}
+else if(t=="council"){h+=`<b>leader</b>: ${LNK(actors[c.lead])}<br>${c.stage=="camp"||c.stage=="tribe"?"<small>a council forms once you reach settlement size</small>":""}<b>council</b>: ${c.coun.map(g=>LNK(actors[g])).join(", ")||"none"}<br>${live(c).filter(a=>a.gid!=c.lead&&ageOf(a)>=16).map(a=>`${LNK(a)} <button data-a="coun:${a.gid}">${c.coun.includes(a.gid)?"remove":"add"} council</button>${lead?` <button data-a="lead:${a.gid}">appoint leader</button>`:""}`).join("<br>")}<hr><b>laws</b><br>`+[["ration","food rationing","hungry members draw from shared chests"],["conscript","conscription","all adults arm themselves"],["openb","open borders","neighbors are not provoked by your claims"],["theft","theft punished","members never raid shared chests"],["tax","tax","members deposit surplus into storage"]].map(([k,n,d])=>`<button data-a="law:${k}" class="${c.law[k]?"on":""}">${n} ${c.law[k]?"on":"off"}</button> <small>${d}</small>`).join("<br>")}
+else if(t=="jobs"){h+="assign jobs to your members:<br>"+live(c).filter(a=>ageOf(a)>=12).map(a=>`${LNK(a)} <select data-job="${a.gid}">${["","woodcutter","miner","farmer","hunter","builder","guard"].map(j=>`<option value="${j}" ${a.job==j?"selected":""}>${j||"free choice"}</option>`).join("")}</select>`).join("<br>")}
+sh("clb",h)}
+let MMC,MMX,MMD,mmDirty=0;
+function mmInit(){MMC=document.createElement("canvas");MMC.width=MMC.height=WS;MMX=MMC.getContext("2d");MMD=MMX.createImageData(WS,WS)}
+function setMM(i){const t=T[i];let q=PAL[t]||[0,0,0];if(O[i]==1||O[i]==7)q=[40,100,45];if(B[i]>0)q=[160,110,60];const k=i*4;MMD.data[k]=q[0];MMD.data[k+1]=q[1];MMD.data[k+2]=q[2];MMD.data[k+3]=255}
+function mmRebuild(){mmInit();for(let i=0;i<N;i++)if(KN[i])setMM(i);mmDirty=1}
+function reveal(){const cx=P.x|0,cy=P.y|0;if(reveal.l==cx*1000+cy)return;reveal.l=cx*1000+cy;const r=cnt(P,"map2")?26:cnt(P,"map")?18:9;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r&&wr(cx+dx,cy+dy)){const i=li(cx+dx,cy+dy);if(!KN[i]){KN[i]=1;setMM(i);mmDirty=1}}}
+function mmDraw(){if(!MMC)return;if(mmDirty){MMX.putImageData(MMD,0,0);mmDirty=0}const c=$("mm"),x=c.getContext("2d"),s=c.width/WS;x.imageSmoothingEnabled=false;x.fillStyle="#0a0e18";x.fillRect(0,0,c.width,c.height);x.drawImage(MMC,0,0,c.width,c.width);for(const cl of claims)if(KN[li(cl.x,cl.y)]){x.fillStyle=civs[cl.civ].col;x.fillRect(cl.x*s-1,cl.y*s-1,3,3)}x.fillStyle="#fff";x.fillRect(P.x*s-2,P.y*s-2,4,4);x.strokeStyle="#fff8";x.strokeRect((cam.x-cw/zoom/32)*s,(cam.y-ch/zoom/32)*s,cw/zoom/16*s,ch/zoom/16*s)}
+function uiMap(){const c=$("mc"),x=c.getContext("2d");if(mmDirty){MMX.putImageData(MMD,0,0);mmDirty=0}x.imageSmoothingEnabled=false;x.fillStyle="#0a0e18";x.fillRect(0,0,WS,WS);x.drawImage(MMC,0,0);const imp=cnt(P,"map2");
+if(imp)for(let i=0;i<N;i+=1){}
+for(const cl of claims)if(KN[li(cl.x,cl.y)]&&(imp||cl.civ==P.civ)){x.fillStyle=civs[cl.civ].col;x.globalAlpha=.35;x.beginPath();x.arc(cl.x,cl.y,cl.r,0,6.3);x.fill();x.globalAlpha=1;x.fillRect(cl.x-2,cl.y-2,5,5)}
+if(imp)for(const s of SU)if(s.disc){x.fillStyle="#fff";x.fillRect(s.x-1,s.y-1,3,3)}
+const MC={home:"#4af",border:"#fa4",cave:"#aaa",island:"#4fa",structure:"#fff",treasure:"#fd2",danger:"#f33"};for(const m of MARKS){x.fillStyle=MC[m.t]||"#fff";x.fillRect(m.x-3,m.y-3,7,7);x.strokeStyle="#000";x.strokeRect(m.x-3,m.y-3,7,7)}
+const tm=P.inv.find(s=>s&&s.i=="tmap"&&s.m!=null);if(tm&&TR[tm.m]&&!TR[tm.m].dug){const t=TR[tm.m];x.strokeStyle="#f22";x.lineWidth=2;x.beginPath();x.moveTo(t.x-5,t.y-5);x.lineTo(t.x+5,t.y+5);x.moveTo(t.x+5,t.y-5);x.lineTo(t.x-5,t.y+5);x.stroke()}
+for(const r of boats){x.fillStyle="#a06020";x.fillRect(r.x-1,r.y-1,3,3)}for(const a of actors)if(al(a)&&(a===P||a.civ>=0&&a.civ==P.civ)){x.fillStyle=a===P?"#fff":civs[a.civ].col;x.fillRect(a.x-2,a.y-2,5,5)}
+sh("mkb",`<small>markers:</small> ${["home","border","cave","island","structure","treasure","danger"].map(m=>`<button data-a="mk:${m}" class="${UIS.mk==m?"on":""}">${m}</button>`).join(" ")} <small>click map to place, shift-click to remove</small>`)}
+function uiSet(){let h=tabs("stab",["controls","saves"],UIS.stab=="general"?"controls":UIS.stab)+"<br>";if(UIS.stab=="saves"){h+=`<input id="sd" placeholder="seed (blank = random)" size="16"> <button data-a="newworld:0">new world</button> <button data-a="save:slot1">quick save</button> <button data-a="load:slot1">quick load</button><br><small>f5 quick save · f9 quick load · home recenter camera</small><br>`;for(const s of["auto","slot1","slot2","slot3"])h+=`<div>${s}: ${SAVEMETA[s]||"empty"} <button data-a="save:${s}">save</button> <button data-a="load:${s}">load</button></div>`;h+=`<small>world seed ${seed}</small>`}else{h+=Object.keys(KBN).map(k=>`<div>${KBN[k]}: <button data-a="key:${k}" class="${UIS.rb==k?"on":""}">${UIS.rb==k?"press a key...":KB[k]}</button></div>`).join("")+`<button data-a="keyreset:0">reset keys</button>`}sh("stb",h)}
+// ---- clicks ----
+function uiClick(e){const t=e.target.closest("[data-a]");if(!t)return false;const[a,v,w]=t.dataset.a.split(":"),n=+v;if(a!="deadtog")snd("ui");const c=P.civ>=0?civs[P.civ]:null,lead=c&&c.lead==P.gid;
+switch(a){
+case"tab":UIS[v]=w;ISEL=null;break;case"autopilot":autopilot=!autopilot;P.ai=autopilot;P.tgt=null;P.tg_=null;P.path=null;P.pi=0;P.rp=0;P.sk=0;P.stuckN=0;P.pilotStuck=0;P.pilotWatchT=0;P.th=0;$("pilotBtn").textContent="ai play: "+(autopilot?"on":"off");tip(autopilot?"ai is now controlling you":"you are back in control");break;case"fav":P.fav[v]=!P.fav[v];break;
+case"fish":fishNow();break;case"camp":campNow();break;case"tame":tameAnimal();break;case"returnview":UIS.track=null;cam.x=P.x;cam.y=P.y;tip("camera returned to your character");break;case"follow":{const near=actors.filter(a=>a!==P&&al(a)&&Math.hypot(a.x-P.x,a.y-P.y)<12&&(kinOf(P,a)||relOf(P,a)>25));for(const a of near){a.command="follow";a.commander=P.gid;a.tgt=null;a.th=0}tip(`${near.length} family members or friends will follow you`)}break;case"stay":{let n=0;for(const a of actors)if(a!==P&&al(a)&&a.commander===P.gid){a.command="stay";a.tgt=null;n++}tip(`${n} followers will stay here`)}break;case"possess":possessNearest();break;case"spectate":spectateNearest();break;case"merc":{if(cnt(P,"gold")<5){tip("you need 5 gold");break}const a=actors.find(a=>a!==P&&a.ai&&al(a)&&a.civ<0&&ageOf(a)>=16&&Math.hypot(a.x-P.x,a.y-P.y)<10);if(!a){tip("no available mercenary nearby");break}take(P,"gold",5);a.command="follow";a.commander=P.gid;a.rl[P.gid]=(a.rl[P.gid]||0)+30;tip(`${fname(a)} joined you as a mercenary`)}break;case"arena":{const foes=actors.filter(a=>a!==P&&a.ai&&al(a)&&!kinOf(P,a)&&Math.hypot(a.x-P.x,a.y-P.y)<25);const a=foes[0];if(!a){tip("no arena opponent nearby");break}a.gr[P.gid]=time+300;a.rl[P.gid]=(a.rl[P.gid]||0)-80;tip(`${fname(a)} accepts the challenge — fight!`)}break;
+case"craft":{const r=craft(P,v);if(r=="ok")snd("craft");else tip(r=="station"?"you need to stand near the right station":r=="materials"?"you are missing materials":"that recipe is locked")}break;
+case"qcraft":if(unlocked(P,v))qCraft(v,5);break;case"clearq":P.cq=[];break;
+case"sortinv":{const b=P.inv.slice(8);sortArr(b);b.forEach((s,i)=>P.inv[8+i]=s)}break;
+case"autoequip":autoEquip(P);tip("best available armor and shield equipped");break;
+case"quickstack":{const cs=chestsNear(P,8);if(!cs.length){tip("no accessible chests nearby");break}let moved=0;for(const i of cs){const A=CH[i];for(let j=8;j<P.inv.length;j++){const s=P.inv[j];if(!s)continue;const d=IT[s.i];if(d.du||s.m!=null){if(putSlot({inv:A},s)){P.inv[j]=null;moved++}}else{const before=s.n,left=add({inv:A,seen:new Set()},s.i,s.n);s.n=left;if(!left)P.inv[j]=null;moved+=before-left}}}tip(`quick-stacked ${moved} item stacks into nearby chests`)}break;
+case"takeall":{const A=arrOf("ch");if(A){theftCheck();for(let j=0;j<A.length;j++){const s=A[j];if(!s)continue;if(IT[s.i].du||s.m!=null){if(putSlot(P,s))A[j]=null}else{const l=add(P,s.i,s.n);if(l)s.n=l;else A[j]=null}}}}break;
+case"depall":{const A=arrOf("ch");if(A){const o={inv:A,seen:new Set()};for(let j=8;j<32;j++){const s=P.inv[j];if(!s)continue;if(IT[s.i].du||s.m!=null){if(putSlot(o,s))P.inv[j]=null}else{const l=add(o,s.i,s.n);if(l)s.n=l;else P.inv[j]=null}}}}break;
+case"sortch":{const A=arrOf("ch");if(A)sortArr(A)}break;case"rename":CN[chI]=($("chn").value||"").toLowerCase().slice(0,18);break;case"access":if(CA[chI]=="s")CA[chI]="p";else CA[chI]="s";break;
+case"prof":showProfile(n);break;case"civ":UIS.cv=n<0?null:n;if(n>=0){UIS.btab="civs";closeAll();$("bk").style.display="block"}break;
+case"evt":UIS.evi=n;UIS.btab="timeline";closeAll();$("bk").style.display="block";break;
+case"jump":cam.x=n;cam.y=+w;UIS.track=null;closeAll();break;case"track":UIS.track=n;closeAll();break;
+case"talkto":{const o=actors[n];if(o&&al(o))chat(o,P)}break;
+case"invite":{const b=actors[n];if(lead&&b.civ!=P.civ){if(rr()<.25+b.tr.gen*.2+relOf(b,P)/150+b.tr.loy*.1){join(b,c);say(b,`i accept your invitation, ${P.n}`,P)}else say(b,`not now, ${P.n}`,P)}}break;
+case"found":{const q=( $("cn").value||"").trim().toLowerCase();if(!c){const founded=mkCiv(P,q||undefined);const partner=actors[P.pt];if(partner&&al(partner)&&partner.companion&&partner.civ<0){join(partner,founded);ev("civ",`${fname(partner)} joined ${founded.n} as your founding partner`,{who:[P.gid,partner.gid],civ:founded.id,loc:{x:P.x|0,y:P.y|0},imp:true,n:true})}}}break;
+case"leave":if(c){const nme=c.n;leave(P);ev("leave",`you left ${nme}`,{who:[P.gid],n:true})}break;
+case"acc":{const b=actors[n];if(c&&b.civ<0){join(b,c);say(b,`thank you, ${P.n}!`,P)}pend=pend.filter(p=>p.g!=n)}break;case"rej":pend=pend.filter(p=>p.g!=n);break;case"join":join(P,civs[n]);invs=[];break;
+case"offer":{const o=offers[+w];if(o){if(v=="acc"){if(o.k=="peace")peace(P.civ,o.c,"accepted");else ally(P.civ,o.c)}offers.splice(+w,1)}}break;
+case"war":if(lead){if(!councilVote(c,"war",n))tip("your council objects, but you rule");declareWar(P.civ,n,"declared by you")}break;
+case"peace":if(lead){const o=civs[n];if(aiAccept("peace",c,o)){peace(P.civ,n,"you offered terms")}else tip(o.n+" refuses peace"+((o.gr[c.id]||0)>6?" — their grievances run deep":" for now"))}break;
+case"surr":if(lead){const o=civs[n],cl=claims.find(x=>x.civ==P.civ);let g=0;for(const r of["gold","wood","stone"]){const k=Math.min(cnt(P,r),r=="gold"?5:15);if(k){take(P,r,k);const L=actors[o.lead];if(L)add(L,r,k);g+=k}}const mine=claims.filter(x=>x.civ==P.civ);if(mine.length>1)transferClaim(mine[mine.length-1],n,"surrender terms");peace(P.civ,n,"you surrendered");}break;
+case"ally":if(lead){const o=civs[n];if(aiAccept("ally",c,o))ally(P.civ,n);else tip(o.n+" declines an alliance")}break;case"unally":if(lead)unally(P.civ,n,"by your choice");break;
+case"trade":if(lead){const o=civs[n];if(aiAccept("trade",c,o)){c.trade[n]=o.trade[P.civ]=1;ev("diplomacy",`${c.n} and ${o.n} signed a trade agreement`,{civ:P.civ,imp:true,n:true})}else tip(o.n+" declines to trade")}break;
+case"tribute":if(lead){const o=civs[n];if(aiAccept("tribute",c,o)){let g=0;for(const m of live(o))for(const r of["gold","wood","food"]){}for(const m of live(o))for(const j in m.inv){const s=m.inv[j];if(s&&(s.i=="gold"||s.i=="wood"||s.i=="stone")&&g<20){const k=Math.min(s.n,20-g);take(m,s.i,k);add(P,s.i,k);g+=k}}ev("diplomacy",`${o.n} paid tribute to ${c.n}`,{civ:P.civ,n:true})}else{annoy(P.civ,n,-12);o.gr[P.civ]=(o.gr[P.civ]||0)+1;tip(o.n+" refuses and resents the demand")}}break;
+case"give":if(lead){const o=civs[n],L=actors[o.lead];let g=0;for(const r of["wood","stone","gold"]){const k=Math.min(cnt(P,r),10-g);if(k>0){take(P,r,k);if(L)add(L,r,k);g+=k}}if(g){annoy(P.civ,n,g*1.2);tip(`you offered ${g} items to ${o.n}`)}else tip("you have nothing to give")}break;
+case"terr":if(lead){const o=civs[n],cl=claims.filter(x=>x.civ==n)[0];if(cl&&aiAccept("territory",c,o))transferClaim(cl,P.civ,"ceded under pressure");else{annoy(P.civ,n,-15);tip(o.n+" refuses to cede land")}}break;
+case"law":if(c)c.law[v]=!c.law[v];break;case"lead":if(lead){c.lead=n;ev("leader",`${fname(P)} appointed ${fname(actors[n])} as leader of ${c.n}`,{who:[n],civ:c.id,imp:true,n:true})}break;
+case"coun":if(c){if(c.coun.includes(n))c.coun=c.coun.filter(g=>g!=n);else if(c.coun.length<3)c.coun.push(n)}break;
+case"mk":UIS.mk=v;break;case"deadtog":UIS.dead^=1;break;case"evf":UIS.evf=v;break;
+case"newworld":{const s=($("sd")?$("sd").value:"").trim();closeAll();$("end").style.display="none";newGame(s);}break;
+case"loadauto":$("end").style.display="none";loadSlot("auto");break;case"save":saveSlot(v,true);break;case"load":loadSlot(v);break;
+case"key":UIS.rb=v;tip("press the new key for "+KBN[v]);break;case"keyreset":KB=Object.assign({},KBD);saveSet();break;
+}uiNow();return true}
+
+// ---- save / load ----
+const rle=a=>{const o=[];let p=a[0],n=1;for(let i=1;i<a.length;i++){if(a[i]==p&&n<60000)n++;else{o.push(p+":"+n);p=a[i];n=1}}o.push(p+":"+n);return o.join(",")},unrle=(t,L)=>{const a=new Uint8Array(L);let i=0;for(const q of t.split(",")){const[v,n]=q.split(":");a.fill(+v,i,i+ +n);i+=+n}return a};
+const IDB={db:null,open(){return this.db?Promise.resolve(this.db):new Promise((res,rej)=>{try{const r=indexedDB.open("civexp",1);r.onupgradeneeded=()=>r.result.createObjectStore("s");r.onsuccess=()=>{this.db=r.result;res(r.result)};r.onerror=()=>rej(r.error)}catch(e){rej(e)}})},put(k,v){return this.open().then(db=>new Promise((res,rej)=>{const t=db.transaction("s","readwrite");t.objectStore("s").put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)}))},get(k){return this.open().then(db=>new Promise((res,rej)=>{const r=db.transaction("s").objectStore("s").get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))}};
+let SAVEMETA={},lastAuto=-99;
+function serialize(){return{v:3,seed,time,P:P.gid,rot,T:rle(T),O:rle(O),B:rle(B),Rf:rle(Rf),RD:rle(RD),KN:rle(KN),H,F,FW,CH,CN,CO,CA,STR,SU,TR,ISL,WF:[...WF],FARMS:[...FARMS],animals,drops,boats,civs,claims,LIN,MARKS,ST,WX,EV:EV.slice(-800),TALK:TALK.slice(-150),CL:CL.slice(-60),actors:actors.map(a=>({...a,seen:[...a.seen],cr:[...a.cr],tgt:null,tg_:null,path:null,shS:null,boat:a.boat?boats.indexOf(a.boat):-1,bad:{}}))}}
+async function saveSlot(k,manual){try{const s=JSON.stringify(serialize());if(!s||s.length<2000)throw new Error("nothing to save");const meta=`${dstr(time)} · ${actors.filter(al).length} people`,old=await IDB.get(k).catch(()=>null);await IDB.put(k+".tmp",s);if(old)await IDB.put(k+".bak",old);await IDB.put(k,s);await IDB.put(k+".meta",meta);SAVEMETA[k]=meta;tip(manual?"saved to "+k:"autosaved")}catch(e){tip("save failed: "+(e&&e.message||e))}}
+function autoSave(why){if(!SET.auto||!P||paused&&why!="timer"&&false)return;if(why!="timer"&&time-lastAuto<25)return;lastAuto=time;saveSlot("auto",false)}
+async function loadSlot(k){try{let s=await IDB.get(k),o=null;try{o=s&&JSON.parse(s)}catch(e){o=null}if(!o){s=await IDB.get(k+".bak");o=s&&JSON.parse(s)}if(!o)return tip("no save in "+k);if(o.v!=3)return tip("that save is from an older version");restore(o);tip("loaded "+k)}catch(e){tip("load failed: "+(e&&e.message||e))}}
+function restore(o){seed=o.seed;time=o.time;rot=o.rot||0;T=unrle(o.T,N);O=unrle(o.O,N);B=unrle(o.B,N);Rf=unrle(o.Rf,N);RD=unrle(o.RD,N);KN=unrle(o.KN,N);TO=new Uint8Array(N);TD=new Uint8Array(N);TC=new Uint8Array(N);H=o.H;F=o.F;FW=o.FW||{};CH=o.CH;CN=o.CN;CO=o.CO;CA=o.CA;STR=o.STR;SU=o.SU;TR=o.TR;ISL=o.ISL;WF=new Set(o.WF);FARMS=new Set(o.FARMS);animals=o.animals;drops=o.drops;boats=o.boats;civs=o.civs;claims=o.claims;LIN=o.LIN;MARKS=o.MARKS;ST=o.ST;WX=o.WX;EV=o.EV;TALK=o.TALK;CL=o.CL;projs=[];offers=[];pend=[];invs=[];
+actors=o.actors.map(a=>({...a,seen:new Set(a.seen),cr:new Set(a.cr),boat:a.boat>=0?boats[a.boat]:null}));P=actors[o.P];cam.x=P.x;cam.y=P.y;paused=false;closeAll();$("end").style.display="none";mmRebuild();reveal.l=-1;computeTerritory();countTerr();buildGrid()}
+// ---- new game ----
+const hashStr=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0};
+function newGame(str){const sd=str?(/^\d+$/.test(str)?(+str)%2147483647:hashStr(str)):Math.floor(Math.random()*1e9);paused=false;time=0;rot=0;WX={t:"clear",i:0,nx:60,fl:0};actors=[];offers=[];UIS.track=null;UIS.cv=null;UIS.evi=-1;chI=null;ISEL=null;rr=mb(sd*7+13);
+gen(sd);const c=[];for(let k=0;k<6000;k++){const x=40+rr()*(WS-80)|0,y=40+rr()*(WS-80)|0;if(T[li(x,y)]!=3||O[li(x,y)])continue;let s=0;for(let dy=-8;dy<=8;dy+=2)for(let dx=-8;dx<=8;dx+=2){const i=li(x+dx,y+dy),t=T[i];if(O[i]==1)s+=1;else if(O[i]==2||O[i]==3)s+=1.2;else if(t==1)s+=.6;else if(t==0)s-=.6;else if(t==6)s+=.2}c.push([s,x,y])}
+c.sort((a,b)=>b[0]-a[0]);const pk=[];for(const sep of[110,80,55,35,0]){for(const q of c){if(pk.length>=30)break;if(pk.every(p=>Math.hypot(p[1]-q[1],p[2]-q[2])>=sep))pk.push(q)}if(pk.length>=30)break}pk.sort(()=>rr()-.5);
+const start=pk[0]||[0,Math.floor(WS/2),Math.floor(WS/2)];let px=start[1]+.5,py=start[2]+.5;for(let a=0;a<60;a++){const x=start[1]+(rr()*6-3|0),y=start[2]+(rr()*6-3|0);if(freeSpot(x,y)){px=x+.5;py=y+.5;break}}
+P=mkActor(false,px,py,{born:-22*LY});P.ai=false;
+let sx=px,sy=py;for(let r=1;r<=8;r++){let found=false;for(let dy=-r;dy<=r&&!found;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!=r)continue;const x=(px|0)+dx,y=(py|0)+dy;if(freeSpot(x,y)){sx=x+.5;sy=y+.5;found=true;break}}if(found)break}
+const companion=mkActor(true,sx,sy,{sex:P.sex=="m"?"f":"m",born:-22*LY});companion.companion=true;companion.base={x:px,y:py};companion.rl[P.gid]=75;P.rl[companion.gid]=75;P.pt=companion.gid;companion.pt=P.gid;
+for(let i=1;i<30;i++){const q=pk[i]||pk[(i-1)%Math.max(1,pk.length)]||start;let x=q[1]+.5,y=q[2]+.5;for(let a=0;a<40;a++){const ax=q[1]+(rr()*6-3|0),ay=q[2]+(rr()*6-3|0);if(freeSpot(ax,ay)){x=ax+.5;y=ay+.5;break}}const a=mkActor(true,x,y);a.base={x,y}}
+cam.x=P.x;cam.y=P.y;rr=Math.random;MARKS=[{x:P.x|0,y:P.y|0,t:"home",n:"home"}];mmInit();mmRebuild();reveal.l=-1;reveal();computeTerritory();countTerr();buildGrid();closeAll();$("end").style.display="none";
+tip(`world seed ${sd}. you start with nothing, far from the others. punch trees for wood, then press c to craft.`)}
+function countTerr(){TCN={};for(let i=0;i<N;i++)if(TO[i])TCN[TO[i]-1]=(TCN[TO[i]-1]||0)+1}
+// ---- simulation ----
+function fortDamage(i,dmg,attacker){const b=B[i];if(![2,3,23,27,28].includes(b))return false;const owner=TO[i]?civs[TO[i]-1]:null,ac=attacker&&attacker.civ>=0?civs[attacker.civ]:null;if(owner&&ac&&owner.id!=ac.id&&!ac.war[owner.id])return false;FW[i]=(FW[i]??(b==2?45:b==23?100:b==27?180:320))-dmg;if(FW[i]<=0){B[i]=0;delete FW[i];const q=STR.findIndex(s=>s.x==i%WS&&s.y==(i/WS|0));if(q>=0)STR.splice(q,1);if(attacker)drop(attacker,b==23||b==28?"stone":"wood",b==28?5:2);CL.push({t:time,x:`${b==28?"castle wall":b==27?"gate":"wall"} breached`});if(CL.length>120)CL.shift()}return true}
+function siegeTick(dt){for(const s of STR){if(![24,25,26].includes(s.t)||time<(s.fireT||0))continue;const owner=actors[s.owner];if(!owner||owner.dead||s.civ<0||!civs[s.civ])continue;const range=s.t==24?15:s.t==25?2.2:9;let target=null,bd=range+1;
+for(const a of nearby(s.x+.5,s.y+.5,range))if(!a.dead&&a.civ>=0&&a.civ!=s.civ&&civs[s.civ].war[a.civ]){const d=Math.hypot(a.x-(s.x+.5),a.y-(s.y+.5));if(d<bd){bd=d;target={a,x:a.x,y:a.y}}}
+if(s.t==24&&!target){let wall=null,wd=range+1;const x0=Math.max(0,s.x-range),x1=Math.min(WS-1,s.x+range),y0=Math.max(0,s.y-range),y1=Math.min(WS-1,s.y+range);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=li(x,y),civ=TO[i]-1;if([2,23,27,28].includes(B[i])&&TO[i]&&civ!=s.civ&&civs[s.civ].war[civ]){const d=Math.hypot(x-s.x,y-s.y);if(d<wd){wd=d;wall={x:x+.5,y:y+.5}}}}if(wall)target=wall}
+if(s.t==25){let wall=null,wd=2.3;for(let y=s.y-2;y<=s.y+2;y++)for(let x=s.x-2;x<=s.x+2;x++)if(wr(x,y)){const i=li(x,y);if([2,23,27,28].includes(B[i])&&TO[i]&&TO[i]-1!=s.civ&&civs[s.civ].war[TO[i]-1]){const d=Math.hypot(x-s.x,y-s.y);if(d<wd){wd=d;wall=i}}}if(wall!=null){fortDamage(wall,34,owner);s.fireT=time+1.15;s.hp=Math.max(0,s.hp-0.15);continue}}
+if(target&&s.t!=25){const dx=target.x-(s.x+.5),dy=target.y-(s.y+.5),d=Math.hypot(dx,dy)||1;projs.push({x:s.x+.5,y:s.y+.5,vx:dx/d*(s.t==24?9:11),vy:dy/d*(s.t==24?9:11),o:owner.gid,dm:s.t==24?25:12,life:Math.min(2.1,d/(s.t==24?9:11)+.3),siege:1,civ:s.civ});s.fireT=time+(s.t==24?4.8:2.2);continue}
+if(s.t==26){for(const a of nearby(s.x+.5,s.y+.5,4))if(!a.dead&&a.civ==s.civ)a.siegeCover=time+1.2;s.fireT=time+1.2}else if(s.t==24)s.fireT=time+1.8;
+}}
+function projTick(dt){for(let k=projs.length-1;k>=0;k--){const p=projs[k],ox=p.x,oy=p.y;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;const ix=p.x|0,iy=p.y|0,i=wr(ix,iy)?li(ix,iy):-1,ow=actors[p.o];let dead=p.life<=0||!wr(ix,iy);if(!dead&&p.siege&&i>=0&&[2,3,23,27,28].includes(B[i])){fortDamage(i,p.dm,ow);dead=true}if(!dead&&solid(ix,iy)&&T[i]!=1)dead=true;if(!dead){for(const n of animals)if(Math.abs(n.x-p.x)<.6&&Math.abs(n.y-p.y)<.6){if(ow)hurtAn(ow,n,p.dm);dead=true;break}}if(!dead)for(const o of nearby(p.x,p.y,1))if(o.gid!=p.o&&Math.hypot(o.x-p.x,o.y-p.y)<.6){if(!p.siege||o.civ<0||o.civ!=p.civ)if(ow)atk(ow,o,p.dm);dead=true;break}if(dead)projs.splice(k,1)}}
+function animalsTick(dt){for(const n of animals){if(n.owner!=null){const owner=actors[n.owner];if(owner&&al(owner)){const d=Math.hypot(owner.x-n.x,owner.y-n.y);if(d>2.2){n.dx=(owner.x-n.x)/(d||1)*Math.min(2.4,d);n.dy=(owner.y-n.y)/(d||1)*Math.min(2.4,d)}else{n.dx=0;n.dy=0}}else n.owner=null}n.t-=dt;if(n.t<=0){n.t=1+rr()*3;const r=rr();n.dx=r<.5?0:(rr()*2-1)*.8;n.dy=r<.5?0:(rr()*2-1)*.8;if(Math.abs(n.x-P.x)<5&&Math.abs(n.y-P.y)<5){const d=Math.hypot(n.x-P.x,n.y-P.y)||1;n.dx=(n.x-P.x)/d*1.6;n.dy=(n.y-P.y)/d*1.6}}if(!bl(n.x+n.dx*dt,n.y,.25))n.x+=n.dx*dt;if(!bl(n.x,n.y+n.dy*dt,.25))n.y+=n.dy*dt}}
+let tkS=0,tkC=0,tkT=0,tkA=0,tkG=0,tkAm=0,nmu=0;
+function sim(dt){time+=dt;worldTick(dt);playerTick(dt);tkG-=dt;if(tkG<=0){tkG=.5;buildGrid();for(const a of actors)if(!a.dead){const d=Math.hypot(a.x-P.x,a.y-P.y);a.lod=d<70?0:d<180?1:2}}
+for(const a of actors){if(a.dead)continue;if(a===P){if(autopilot)aiStep(a,dt);life(a,dt);continue}if(!a.ai){life(a,dt);continue}if(a.lod==0){aiStep(a,dt);life(a,dt)}else{a.acc+=dt;const lim=a.lod==1?.2:1;if(a.acc>=lim){const d2=a.acc;a.acc=0;if(a.lod==1)aiStep(a,d2);else stepFar(a,d2);life(a,d2)}}}
+projTick(dt);siegeTick(dt);animalsTick(dt);tkS-=dt;if(tkS<=0){tkS=2;socialTick()}tkC-=dt;if(tkC<=0){tkC=1;civTick()}tkT-=dt;if(tkT<=0){tkT=4;computeTerritory();countTerr()}tkAm-=dt;if(tkAm<=0){tkAm=.5;ambTick()}tkA+=dt;if(tkA>=120){tkA=0;autoSave("timer")}}
+function ambTick(){if(!AC||!WG)return;let tr2=0,w=0;const cx=P.x|0,cy=P.y|0;for(let dy=-7;dy<=7;dy++)for(let dx=-7;dx<=7;dx++){const x=cx+dx,y=cy+dy;if(!wr(x,y))continue;const i=li(x,y);if(O[i]==1||O[i]==7)tr2++;if(T[i]<=1)w++}
+WG.gain.value=.03+Math.min(.12,tr2/60*.12)+(WX.t=="wind"||WX.t=="storm"||WX.t=="snowstorm"?.1:0);WT.gain.value=Math.min(.2,w/90*.2);RG.gain.value=isRain()?.04+WX.i*.12:0;
+if(time>nmu){nmu=time+5+rr()*7;const f=[261.6,293.7,329.6,392,440][rr()*5|0]*(rr()<.3?.5:1);tone(f,2.5,"sine",.3,0,0,G.m);if(rr()<.5)tone(f*1.5,2.5,"sine",.15,0,.4,G.m)}
+for(const s of STR)if(s.t==10&&Math.abs(s.x-P.x)<8&&Math.abs(s.y-P.y)<8&&rr()<.6){burst(2800,2,.03,.08,G.a);break}}
+// ---- rendering ----
+const LC=document.createElement("canvas"),LX=LC.getContext("2d");
+function person(a){const x=a.x*16,y=a.y*16,b=a.mv?Math.sin(a.ph*2.2):0,g=ageOf(a),s=g<4?.55:g<12?.7:g<16?.88:1;if(s<1){ctx.save();ctx.translate(x,y+7);ctx.scale(s,s);ctx.translate(-x,-y-7)}
+ctx.fillStyle="#0004";ctx.fillRect(x-4,y+4,8,3);ctx.fillStyle="#3a2c1c";ctx.fillRect(x-3,y+2+(b>0?1:0),2,4);ctx.fillRect(x+1,y+2+(b<0?1:0),2,4);
+if(a.sl){ctx.fillStyle=a.col;ctx.fillRect(x-5,y,10,5);ctx.fillStyle="#e8c49a";ctx.fillRect(x+3,y-1,4,4)}else{ctx.fillStyle=a.hitT>time?"#ff3a2a":a.eq.armor?IT[a.eq.armor.i].c:a.col;ctx.fillRect(x-3,y-4+Math.abs(b)*.5,6,7);if(a.eq.armor){ctx.fillStyle=a.col;ctx.fillRect(x-3,y-4+Math.abs(b)*.5,6,2)}ctx.fillStyle="#e8c49a";ctx.fillRect(x-3,y-9+Math.abs(b)*.5,6,5);ctx.fillStyle=["#3a2c1c","#c8a050","#8a3a1a","#222"][a.gid%4];ctx.fillRect(x-3,y-9+Math.abs(b)*.5,6,2);ctx.fillStyle="#222";ctx.fillRect(x+(a.fl>0?1:-2),y-6+Math.abs(b)*.5,1,1);
+const hs2=wslot(a)||(a===P&&a.inv[a.sel]);if(hs2&&IM[hs2.i])ctx.drawImage(IM[hs2.i],x+(a.fl>0?2:-10),y-4,8,8);if(a.eq.shield){ctx.fillStyle=IT[a.eq.shield.i].c;ctx.fillRect(x+(a.fl>0?-6:4),y-3,3,6)}}
+if(a.civ>=0&&civs[a.civ]){ctx.fillStyle=civs[a.civ].col;ctx.fillRect(x-1,y-13,3,3)}if(s<1)ctx.restore();if(a===P){ctx.fillStyle="#fff";ctx.fillRect(x-1,y-16,3,2)}}
+function tintOf(c){if(!c._k||c._k!=SET.ter){const q=hex2(c.col),al2=SET.ter==1?.11:.2;c._t=`rgba(${q[0]},${q[1]},${q[2]},${al2})`;c._k=SET.ter}return c._t}
+function draw(){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle="#1a3a6e";ctx.fillRect(0,0,cv.width,cv.height);const z=zoom*D;ctx.setTransform(z,0,0,z,(cw/2-cam.x*16*zoom)*D,(ch/2-cam.y*16*zoom)*D);ctx.imageSmoothingEnabled=false;
+const x0=Math.max(0,Math.floor(cam.x-cw/zoom/32)-1),x1=Math.min(WS-1,Math.ceil(cam.x+cw/zoom/32)+1),y0=Math.max(0,Math.floor(cam.y-ch/zoom/32)-1),y1=Math.min(WS-1,Math.ceil(cam.y+ch/zoom/32)+1),sea=season(),fl=(time*4|0)%2,SC=[[150,230,110,.1],[0,0,0,0],[230,150,50,.2],[235,244,255,.42]][sea],sstr=SC[3]?`rgba(${SC[0]},${SC[1]},${SC[2]},${SC[3]})`:null,ter=SET.ter;
+for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*WS+x,t=T[i];ctx.drawImage(TV[t][(x*7+y*3)%3],x*16,y*16);if(sstr&&(t==3||t==8)){ctx.fillStyle=sstr;ctx.fillRect(x*16,y*16,16,16)}
+const own=TO[i];if(own&&ter&&t>1&&t!=6){const c=civs[own-1];if(c){ctx.fillStyle=tintOf(c);ctx.fillRect(x*16,y*16,16,16);if(TC[i]){ctx.fillStyle="rgba(255,255,255,.16)";ctx.fillRect(x*16,y*16+((x+y)&1)*8,16,4)}ctx.fillStyle=c.col;if(TO[i+1]!=own)ctx.fillRect(x*16+14,y*16,2,16);if(TO[i-1]!=own)ctx.fillRect(x*16,y*16,2,16);if(TO[i+WS]!=own)ctx.fillRect(x*16,y*16+14,16,2);if(TO[i-WS]!=own)ctx.fillRect(x*16,y*16,16,2)}}
+if(RD[i]&&!B[i])ctx.drawImage(SPR.road,x*16,y*16);if(WF.has(i))ctx.drawImage(SPR.fall,x*16,y*16);const b=B[i];if(b==1)ctx.drawImage(SPR.floor,x*16,y*16);else if(b==3)ctx.drawImage(SPR.door,x*16,y*16);else if(b==16)ctx.drawImage(SPR.ruinfloor,x*16,y*16);else if(b==14)ctx.drawImage(SPR["farm"+Math.min(2,F[i]/30|0)],x*16,y*16)}
+for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*WS+x,o=O[i],b=B[i];if(o)ctx.drawImage(SPR[o==1?(sea==2?"tree_a":sea==3?"tree_w":"tree"):o==2?"rock":o==3?(sea==3?"bush0":"bush"):o==4?"ore":o==6?"crystal":o==7?"ancient":"bush0"],x*16,y*16);else if(b>=2&&b!=3&&b!=14&&b!=16)ctx.drawImage(SPR[b==2?"wall":b==15?"ruinwall":b==23?"stonewall":b==24?"catapult":b==25?"battering_ram":b==26?"siege_tower":b==27?"gate":b==28?"castlewall":b==10?(fl?"campfire":"campfire2"):b==11?"workbench":b==12?"chest":b==13?"furnace":b==19?"workbench2":b==20?"anvil":b==21?"cookstation":"bed"],x*16,y*16)}
+for(const cl of claims){if(cl.x<x0-6||cl.x>x1+6||cl.y<y0-6||cl.y>y1+6)continue;const c=civs[cl.civ];if(!c)continue;const st=c.stage,fs=st=="camp"?[5,3]:st=="tribe"?[7,4]:st=="settlement"?[9,5]:[12,7],fx=cl.x*16+2,fy=cl.y*16-12;ctx.fillStyle="#4a3018";ctx.fillRect(fx,fy,2,14);ctx.fillStyle=c.col;ctx.fillRect(fx+2,fy,fs[0],fs[1]);if(st=="village"){ctx.fillStyle=c.col;ctx.fillRect(fx+2,fy+fs[1]+1,fs[0],2)}
+if(st=="camp"||st=="tribe"){const n=st=="camp"?1:Math.min(4,c.mem.length+1);for(let k=0;k<n;k++){const a=k*1.9+cl.x;ctx.drawImage(SPR.tent,(cl.x+Math.round(Math.cos(a)*2.5))*16,(cl.y+Math.round(Math.sin(a)*2.5))*16)}}}
+for(const r of boats){ctx.drawImage(SPR[r.k],r.x*16-8,r.y*16-8)}
+for(const d of drops){if(d.x<x0-1||d.x>x1+1||d.y<y0-1||d.y>y1+1)continue;ctx.fillStyle=IT[d.id].c;ctx.fillRect(d.x*16-3,d.y*16-3+Math.sin(time*4+d.x)*1,6,6);ctx.strokeStyle="#0008";ctx.strokeRect(d.x*16-3,d.y*16-3,6,6)}
+for(const n of animals){if(n.x<x0-1||n.x>x1+1||n.y<y0-1||n.y>y1+1)continue;const x=n.x*16,y=n.y*16;ctx.fillStyle="#0004";ctx.fillRect(x-5,y+3,10,3);ctx.fillStyle=sea==3?"#d8d0c0":"#9a7a58";ctx.fillRect(x-5,y-3,10,6);ctx.fillStyle="#b8946a";ctx.fillRect(x+(n.dx<0?-7:4),y-5,4,4)}
+const vis2=[];for(const a of actors)if(!a.dead&&a.x>x0-2&&a.x<x1+2&&a.y>y0-2&&a.y<y1+2)vis2.push(a);vis2.sort((a,b)=>a.y-b.y);for(const a of vis2)person(a);
+for(const p of projs){ctx.fillStyle=p.siege?"#a9a39a":"#eee";ctx.beginPath();ctx.arc(p.x*16,p.y*16,p.siege?3:1.5,0,6.3);ctx.fill();ctx.strokeStyle="#eee";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.x*16,p.y*16);ctx.lineTo(p.x*16-p.vx*.4,p.y*16-p.vy*.4);ctx.stroke()}
+const pi=li(P.x|0,P.y|0);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(Rf[y*WS+x]){ctx.globalAlpha=Rf[pi]&&Math.abs(P.x-x)<6&&Math.abs(P.y-y)<5?.22:.95;ctx.drawImage(SPR.roof,x*16,y*16);ctx.globalAlpha=1}}
+const[tx,ty]=mtile(),hx=tx|0,hy=ty|0,hd=P.inv[P.sel]&&IT[P.inv[P.sel].i];if(hd&&hd.pl){const ok=canPut(P.inv[P.sel].i,hx,hy)&&Math.hypot(hx+.5-P.x,hy+.5-P.y)<6;ctx.globalAlpha=.55;ctx.fillStyle=ok?"#7fff7f":"#ff6a5a";if(P.inv[P.sel].i=="house"){const g=houseGeo(hx,hy);ctx.fillRect(g.x0*16,g.y0*16,g.w*16,g.h*16)}else ctx.fillRect(hx*16,hy*16,16,16);ctx.globalAlpha=1}else{ctx.strokeStyle="#fff8";ctx.lineWidth=1;ctx.strokeRect(hx*16+.5,hy*16+.5,15,15)}
+ctx.setTransform(D,0,0,D,0,0);lighting();weatherFx();
+ctx.font="11px 'Courier New',monospace";ctx.textAlign="center";const showN=zoom>=2;for(const a of vis2){if(!showN&&a!==P)continue;const sx=(a.x-cam.x)*16*zoom+cw/2,sy=(a.y-cam.y)*16*zoom+ch/2-14*zoom;if(sx<-60||sx>cw+60||sy<-20||sy>ch+20)continue;ctx.fillStyle="#000a";ctx.fillText(a.n,sx+1,sy+1);ctx.fillStyle=a===P?"#ffe27a":"#fff";ctx.fillText(a.n,sx,sy);if(a.sayT>time&&a.say){const t2=a.say.slice(0,42),w=ctx.measureText(t2).width+10;ctx.fillStyle="#fffe";ctx.fillRect(sx-w/2,sy-24,w,15);ctx.fillStyle="#222";ctx.fillText(t2,sx,sy-13)}}
+for(const cl of claims){const c=civs[cl.civ];if(!c||zoom<1.3)continue;const sx=(cl.x+.5-cam.x)*16*zoom+cw/2,sy=(cl.y-cam.y)*16*zoom+ch/2-26*zoom;if(sx<-60||sx>cw+60||sy<-20||sy>ch+20)continue;ctx.fillStyle="#000a";ctx.fillText(`${c.n} · ${c.stage}`,sx+1,sy+1);ctx.fillStyle=c.col;ctx.fillText(`${c.n} · ${c.stage}`,sx,sy)}
+if(P.sl){ctx.fillStyle="rgba(0,0,20,.55)";ctx.fillRect(0,0,cw,ch);ctx.fillStyle="#fff";ctx.fillText("sleeping... move to wake",cw/2,ch/2)}}
+function lighting(){const d=dark(),h=hour();if(d<.02&&WX.fl<=0&&WX.i<.3)return;const w=cw>>1,hh=ch>>1;if(LC.width!=w){LC.width=w;LC.height=hh}LX.globalCompositeOperation="source-over";LX.clearRect(0,0,w,hh);
+if(d>.02){LX.fillStyle=`rgba(10,16,52,${Math.min(.8,d*.9+WX.i*.06)})`;LX.fillRect(0,0,w,hh);LX.globalCompositeOperation="destination-out";const L=(wx,wy,r,a)=>{const sx=((wx-cam.x)*16*zoom+cw/2)/2,sy=((wy-cam.y)*16*zoom+ch/2)/2,rr2=r*16*zoom/2*(1+.04*Math.sin(time*9+wx));if(sx<-rr2||sx>w+rr2||sy<-rr2||sy>hh+rr2)return;const g=LX.createRadialGradient(sx,sy,0,sx,sy,rr2);g.addColorStop(0,`rgba(0,0,0,${a})`);g.addColorStop(1,"rgba(0,0,0,0)");LX.fillStyle=g;LX.beginPath();LX.arc(sx,sy,rr2,0,6.3);LX.fill()};L(P.x,P.y,5,.75);for(const s of STR)if(s.t==10)L(s.x+.5,s.y+.5,7,.95);else if(s.t==13||s.t==21)L(s.x+.5,s.y+.5,4.5,.8)}
+ctx.drawImage(LC,0,0,cw,ch);if(d>.02&&d<.6&&h>12){ctx.fillStyle=`rgba(255,140,60,${.14*(1-d/.6)})`;ctx.fillRect(0,0,cw,ch)}}
+function weatherFx(){if(WX.fl>0){ctx.fillStyle=`rgba(255,255,255,${WX.fl*.5})`;ctx.fillRect(0,0,cw,ch)}if(WX.t=="fog"||WX.i>.3&&WX.t!="clear"){ctx.fillStyle=`rgba(205,215,225,${WX.t=="fog"?WX.i*.4:WX.i*.1})`;ctx.fillRect(0,0,cw,ch)}if(isRain()&&SET.part){ctx.strokeStyle="rgba(170,200,255,.45)";ctx.lineWidth=1;ctx.beginPath();const n=Math.floor(60+WX.i*220);for(let i=0;i<n;i++){const px=(i*97.3+time*60)%cw,py=(i*53.7+time*(700+(i%5)*120))%ch;ctx.moveTo(px,py);ctx.lineTo(px-3,py+11)}ctx.stroke()}
+if(isSnow()&&SET.part){ctx.fillStyle="rgba(255,255,255,.85)";const n=Math.floor(60+WX.i*200);for(let i=0;i<n;i++){const px=(i*89.7+time*(20+i%7*6)+Math.sin(time+i)*14)%cw,py=(i*61.3+time*(50+i%5*20))%ch;ctx.fillRect(px,py,2,2)}}}
+// ---- main loop, input, init ----
+let last=performance.now();
+function frame(now){const dt=Math.min(.05,(now-last)/1e3);last=now;if(!paused&&P&&!P.dead){const n=P.sl?6:Math.max(1,Math.round(gspd)),sd=dt*(gspd<1?gspd:1);for(let i=0;i<n;i++)sim(sd)}
+if(UIS.track!=null&&actors[UIS.track]&&!actors[UIS.track].dead){const t=actors[UIS.track];cam.x+=(t.x-cam.x)*Math.min(1,dt*6);cam.y+=(t.y-cam.y)*Math.min(1,dt*6)}else{cam.x+=(P.x-cam.x)*Math.min(1,dt*8);cam.y+=(P.y-cam.y)*Math.min(1,dt*8)}
+uiT-=dt;if(uiT<=0){uiT=.2;ui()}const hv=$("hv"),dsc=!paused&&P?describe():"";hv.style.display=dsc?"block":"none";if(dsc){hv.textContent=dsc;hv.style.left=mx+16+"px";hv.style.top=my+16+"px"}
+draw();requestAnimationFrame(frame)}
+function rs(){cw=cv.clientWidth;ch=cv.clientHeight;cv.width=cw*D;cv.height=ch*D}
+const ARR={arrowup:"up",arrowdown:"down",arrowleft:"left",arrowright:"right"};
+function init(){cv=$("cv");ctx=cv.getContext("2d");D=Math.min(devicePixelRatio||1,2);rs();addEventListener("resize",rs);
+document.addEventListener("keydown",e=>{const el=e.target.tagName;if(el=="INPUT"||el=="SELECT"){if(e.key=="Escape")e.target.blur();return}const k=e.key.toLowerCase();au();if(e.key==="F5"){e.preventDefault();saveSlot("slot1",true);return}if(e.key==="F9"){e.preventDefault();loadSlot("slot1");return}if(e.key==="Home"){e.preventDefault();UIS.track=null;cam.x=P.x;cam.y=P.y;tip("camera centered on you");return}
+if(UIS.rb){e.preventDefault();KB[UIS.rb]=k;UIS.rb=null;saveSet();uiNow();return}
+if(ARR[k]){keys[KB[ARR[k]]]=1;e.preventDefault()}keys[k]=1;if(k==KB.up||k==KB.down||k==KB.left||k==KB.right)UIS.track=null;
+const a=actOf(k);if(!a||!P)return;if(a!="settings"&&paused&&a!="pause"&&P.dead)return;e.preventDefault();
+if(/^s[1-8]$/.test(a)){P.sel=+a[1]-1;uiHB();return}
+({interact,inventory:()=>togg("inv"),craft:()=>togg("cr"),map:()=>{if(cnt(P,"map")||cnt(P,"map2"))togg("mp");else tip("craft a map at a workbench first")},book:()=>togg("bk"),civ:()=>togg("cl"),
+eat:()=>{const s=P.inv[P.sel];if(s&&IT[s.i].f)eat(P,P.sel);else{const j=bestFood(P);if(j>=0)eat(P,j)}},drop:throwItem,pause:()=>{paused=!paused;tip(paused?"paused":"resumed")},rotate:()=>{rot^=1;tip("rotation "+(rot?"vertical":"horizontal"))},
+settings:()=>{if([...PANS].some(q=>vis(q)))closeAll();else togg("st")},zoomin:()=>zoom=Math.min(6,zoom*1.2),zoomout:()=>zoom=Math.max(1,zoom/1.2),sleep:()=>{const b=STR.find(s=>s.t==22&&Math.hypot(s.x-P.x,s.y-P.y)<4);if(b&&dark()>.25){P.sl=1;tip("you fall asleep")}else tip(b?"it is not dark yet":"no bed nearby")},boat:boatStore})[a]?.()});
+document.addEventListener("keyup",e=>{const k=e.key.toLowerCase();keys[k]=0;if(ARR[k])keys[KB[ARR[k]]]=0});
+cv.addEventListener("pointermove",e=>{mx=e.offsetX;my=e.offsetY});
+cv.addEventListener("pointerdown",e=>{au();mx=e.offsetX;my=e.offsetY;if(!P||P.dead||autopilot)return;if(e.button==2){rclick();return}const[tx,ty]=mtile(),x=tx|0,y=ty|0,s=P.inv[P.sel];if(s&&IT[s.i].pl){if(Math.hypot(x+.5-P.x,y+.5-P.y)<6){if(!put(P,s.i,x,y))tip("cannot place that here");uiHB()}return}ml=true});
+addEventListener("pointerup",()=>ml=false);cv.addEventListener("contextmenu",e=>e.preventDefault());
+cv.addEventListener("wheel",e=>{e.preventDefault();if(e.ctrlKey||e.metaKey)zoom=clamp(zoom*Math.exp(-e.deltaY*.001),1,6);else{P.sel=(P.sel+(e.deltaY>0?1:7))%8;uiHB()}},{passive:false});
+document.addEventListener("contextmenu",e=>{const s=e.target.closest("[data-w]");if(s){e.preventDefault();splitSlot(s.dataset.w=="hb"?"inv":s.dataset.w,+s.dataset.j);uiNow()}});
+document.addEventListener("click",e=>{au();if(uiClick(e))return;const b=e.target.closest("[data-p]");if(b){if(b.dataset.p=="mp"&&!cnt(P,"map")&&!cnt(P,"map2"))return tip("craft a map at a workbench first");return togg(b.dataset.p)}
+const s=e.target.closest("[data-w]");if(s){const w=s.dataset.w;if(w=="hb"){P.sel=+s.dataset.j;uiHB();return}slotClick(w,+s.dataset.j,e);uiNow()}});
+document.addEventListener("change",e=>{const j=e.target.dataset&&e.target.dataset.job;if(j!=null){actors[+j].job=e.target.value;tip(`${actors[+j].n} is now ${e.target.value||"free to choose"}`)}});
+const bind=(id,k)=>$(id).addEventListener("input",e=>{UIS[k]=e.target.value;uiNow()});bind("iq","iq");bind("cq","cq");bind("bq","bq");bind("chq","chq");
+$("mc").addEventListener("click",e=>{const r=$("mc").getBoundingClientRect(),x=Math.floor((e.clientX-r.left)/r.width*WS),y=Math.floor((e.clientY-r.top)/r.height*WS);if(e.shiftKey){const k=MARKS.findIndex(m=>Math.abs(m.x-x)<6&&Math.abs(m.y-y)<6);if(k>=0)MARKS.splice(k,1)}else MARKS.push({x,y,t:UIS.mk,n:UIS.mk});uiNow()});
+$("vm").oninput=e=>{vol.m=e.target.value/100;setVol()};$("vs").oninput=e=>{vol.s=e.target.value/100;setVol()};$("va").oninput=e=>{vol.a=e.target.value/100;setVol()};
+$("uis").oninput=e=>{SET.ui=+e.target.value;$("ui").style.zoom=SET.ui;saveSet()};$("spd").onchange=e=>gspd=+e.target.value;$("ter").onchange=e=>{SET.ter=+e.target.value;saveSet()};$("par").onchange=e=>{SET.part=e.target.checked?1:0;saveSet()};$("aut").onchange=e=>{SET.auto=e.target.checked?1:0;saveSet()};$("ae").onchange=e=>{SET.autoEquip=e.target.checked?1:0;saveSet()};
+$("fs").onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()};
+$("uis").value=SET.ui;$("ui").style.zoom=SET.ui;$("ter").value=SET.ter;$("par").checked=!!SET.part;$("aut").checked=!!SET.auto;$("ae").checked=!!SET.autoEquip;
+IDB.get("auto.meta").then(m=>{if(m)SAVEMETA.auto=m}).catch(()=>{});for(const s of["slot1","slot2","slot3"])IDB.get(s+".meta").then(m=>{if(m)SAVEMETA[s]=m}).catch(()=>{});
+newGame();requestAnimationFrame(frame)}
+
+
+init();
+</script></body></html>
