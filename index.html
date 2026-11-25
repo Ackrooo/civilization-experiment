@@ -45,7 +45,7 @@ hr{border:0;border-top:1px solid var(--ln)}
 .tm-label{display:block;color:#c8b895;font:12px Arial,sans-serif;text-align:left;margin:12px auto 5px;max-width:300px}
 .tm-hidden{display:none!important}
 @media(max-width:520px){.tm-panel{padding:26px 18px}.tm-title{margin-bottom:24px}}
-#tm-mp-list{position:fixed;z-index:9998;right:14px;top:14px;width:210px;padding:12px;background:rgba(24,22,18,.96);border:1px solid #806b45;color:#e9dec7;font:13px Arial,sans-serif;box-shadow:0 8px 28px #0008}#tm-mp-list b{display:block;margin-bottom:8px;color:#c49b58;letter-spacing:.08em}#tm-mp-list .tm-player{padding:5px 0;border-top:1px solid #5e5038}#tm-mp-list .tm-player small{color:#a99a7d}#tm-mp-list.tm-hidden{display:none!important}
+#tm-travel-fade{position:fixed;inset:0;z-index:100000;background:#000;display:none}#tm-travel-fade.on{display:block}
 </style></head><body>
 <canvas id="cv"></canvas>
 <div id="ui">
@@ -66,7 +66,7 @@ hr{border:0;border-top:1px solid var(--ln)}
 <div id="hint">wasd move · click harvest/attack · right click use/remove · e interact · f5 save · f9 load · home recenter · c i t v m</div>
 </div>
 
-<div id="tm-mp-list" class="tm-hidden"><b>PLAYERS IN ROOM (0)</b><div id="tm-mp-entries"></div></div>
+<div id="tm-travel-fade"></div>
 <div id="titleMenu">
  <section class="tm-panel" id="tm-main">
   <h1 class="tm-title">CIVILIZATION<span>EXPERIMENT</span></h1>
@@ -809,7 +809,7 @@ const KBD={up:"w",down:"s",left:"a",right:"d",interact:"e",inventory:"i",craft:"
 let KB=Object.assign({},KBD),SET={ui:1,ter:2,part:1,auto:1,spd:1,autoEquip:1};
 try{Object.assign(KB,JSON.parse(localStorage.getItem("civexp_kb")||"{}"));Object.assign(SET,JSON.parse(localStorage.getItem("civexp_set")||"{}"))}catch(e){}
 const saveSet=()=>{try{localStorage.setItem("civexp_kb",JSON.stringify(KB));localStorage.setItem("civexp_set",JSON.stringify(SET))}catch(e){}};
-const UIS={iq:"",cq:"",bq:"",chq:"",icat:"all",ccat:"basics",btab:"people",ctab:"overview",stab:"general",sel:null,mk:"home",pf:-1,evi:-1,rb:null,dead:0,evf:"all",crv:{}};
+const UIS={iq:"",cq:"",bq:"",chq:"",icat:"all",ccat:"basics",btab:"people",ctab:"overview",stab:"general",sel:null,mk:"home",pf:-1,evi:-1,rb:null,dead:0,playersOnly:0,evf:"all",crv:{}};
 const keys={};let mx=0,my=0,ml=false,pcd=0,cv,ctx,cw,ch,D=1,chI=null,ISEL=null;
 function tip(s){const e=$("tt");e.textContent=s;e.style.display="block";clearTimeout(tip.t);tip.t=setTimeout(()=>e.style.display="none",3800)}
 const mtile=()=>[((mx-cw/2)/zoom+cam.x*16)/16,((my-ch/2)/zoom+cam.y*16)/16];
@@ -898,7 +898,16 @@ for(const a of live(c))for(const s of a.inv)if(s)acc(v,s);cvCache={t:time,id:c.i
 function acc(v,s){const d=IT[s.i];if(d.f)v.food+=s.n*(d.f>=30?2:1);else if(s.i=="wood")v.wood+=s.n;else if(s.i=="stone")v.stone+=s.n;else if(s.i=="iron")v.iron+=s.n;else if(s.i=="gold")v.gold+=s.n}
 const LNK=x=>x?`<span class="r" data-a="prof:${x.gid}">${x.dead?"† ":""}${fname(x)}</span>`:"none";
 function uiBook(){const t=UIS.btab,q=UIS.bq.toLowerCase();let h=tabs("btab",["people","civs","timeline","family","places","stats","combat","talk"],t)+"<br>";
-if(t=="people"){h+=`<label><input type="checkbox" data-a="deadtog:0" ${UIS.dead?"checked":""}> include the dead</label><br>`;for(const a of actors.filter(a=>(UIS.dead||!a.dead)&&(!q||fname(a).includes(q)||a.role.includes(q)||(a.civ>=0&&civs[a.civ].n.includes(q)))).slice(0,160))h+=`<div class="r" data-a="prof:${a.gid}">${a.dead?"† ":""}${fname(a)} · ${ageOf(a)|0} · ${a.civ>=0?civs[a.civ].n:"no civ"} · ${a.dead?"died "+a.why:a.doing}</div>`}
+if(t=="people"){h+=`<label><input type="checkbox" data-a="deadtog:0" ${UIS.dead?"checked":""}> include the dead</label> <label><input type="checkbox" data-a="aitog:0" ${UIS.playersOnly?"checked":""}> exclude AI</label><br>`;
+if(tmGameMode==="multiplayer"){
+ if(tmPendingTravel.length)h+="<b>travel requests</b><br>"+tmPendingTravel.map(p=>`<div class="box">${tmEsc(p.name)} wants to travel to you <button data-a="travelaccept:${p.id}">accept</button> <button data-a="traveldecline:${p.id}">decline</button></div>`).join("");
+ if(tmPendingCiv.length)h+="<b>civilization invitations</b><br>"+tmPendingCiv.map(p=>`<div class="box">${tmEsc(p.name)} invited you to ${tmEsc(p.civName)} <button data-a="civaccept:${p.id}">accept</button> <button data-a="civdecline:${p.id}">decline</button></div>`).join("");
+ if(!UIS.playersOnly)for(const a of actors.filter(a=>(UIS.dead||!a.dead)&&(!q||fname(a).includes(q)||a.role.includes(q)||(a.civ>=0&&civs[a.civ].n.includes(q)))).slice(0,160))h+=`<div class="r" data-a="prof:${a.gid}">${a.dead?"† ":""}${fname(a)} · ${ageOf(a)|0} · ${a.civ>=0?civs[a.civ].n:"no civ"} · ${a.dead?"died "+a.why:a.doing}</div>`;
+ h+="<br><b>players in this room</b><br>";
+ const online=tmOnlinePlayers.filter(p=>!q||(p.name||"").toLowerCase().includes(q));
+ if(!online.length)h+="<small>no other players are currently listed</small>";
+ for(const p of online){const selected=tmSelectedPlayer===p.id;h+=`<div class="r" data-a="mpplayer:${p.id}">▣ ${tmEsc(p.name||"Player")} ${p.id===tmSocket?.id?"(you)":""} · ${tmEsc(p.civName||"no civilization")}</div>`;if(selected&&p.id!==tmSocket?.id){h+=`<div class="box">${tmIsCivLeader()?'<button data-a="mpinvite:'+p.id+'">invite to your civilization</button> ':""}<button data-a="travelrequest:${p.id}">Request Travel</button></div>`}}
+}else{for(const a of actors.filter(a=>(UIS.dead||!a.dead)&&(!q||fname(a).includes(q)||a.role.includes(q)||(a.civ>=0&&civs[a.civ].n.includes(q)))).slice(0,160))h+=`<div class="r" data-a="prof:${a.gid}">${a.dead?"† ":""}${fname(a)} · ${ageOf(a)|0} · ${a.civ>=0?civs[a.civ].n:"no civ"} · ${a.dead?"died "+a.why:a.doing}</div>`}}
 else if(t=="civs"){if(UIS.cv!=null&&civs[UIS.cv]){const c=civs[UIS.cv],s=civStats(c);h+=`<button data-a="civ:-1">back</button><br><b style="color:${c.col}">${c.n}</b> (${c.cn}) ${c.dead?"· collapsed":""}<br>stage: ${c.stage} · population ${c.mem.length} (peak ${c.peak}) · territory ${TCN[c.id]||0} tiles · founded ${dstr(c.t0)}<br>leader: ${LNK(actors[c.lead])}<br>strength ${strength(c)|0} · buildings: ${s.houses} houses, ${s.farms} farms, ${s.chests} chests, ${s.stations} stations · siege engines ${STR.filter(z=>z.civ==c.id&&[24,25,26].includes(z.t)).length}<br>allies: ${Object.keys(c.ally).map(i=>civs[i].n).join(", ")||"none"} · wars: ${Object.keys(c.war).map(i=>civs[i].n).join(", ")||"none"}<br>members: ${live(c).map(LNK).join(", ")}<br><b>history</b>${EV.filter(e=>e.civ==c.id).slice(-12).reverse().map(e=>`<div class="r" data-a="evt:${EV.indexOf(e)}">${dstr(e.t)}: ${e.x}</div>`).join("")}`}
 else for(const c of civs.filter(c=>(UIS.dead||!c.dead)&&(!q||c.n.includes(q)))){h+=`<div class="r" data-a="civ:${c.id}"><span style="color:${c.col}">■</span> ${c.n} · ${c.stage} · pop ${c.mem.length} · ${c.dead?"collapsed":"led by "+(actors[c.lead]?actors[c.lead].n:"none")}</div>`}h+=`<br><label><input type="checkbox" data-a="deadtog:0" ${UIS.dead?"checked":""}> include collapsed</label>`}
 else if(t=="timeline"){const e=EV[UIS.evi];if(e)h+=`<div class="box"><b>${dstr(e.t)}</b> · ${e.type}<br>${e.x}<br>people: ${e.who.map(g=>LNK(actors[g])).join(", ")||"none"}<br>civilization: ${e.civ>=0&&civs[e.civ]?civs[e.civ].n:"none"}<br>location: ${e.loc?`${e.loc.x}, ${e.loc.y} <button data-a="jump:${e.loc.x}:${e.loc.y}">show on world</button>`:"unknown"}</div>`;h+=["all","war","peace","civ","birth","death","marriage","discover","leader","capture","stage"].map(f=>`<button data-a="evf:${f}" class="${UIS.evf==f?"on":""}">${f}</button>`).join(" ")+"<br>";for(let i=EV.length-1,n=0;i>=0&&n<150;i--){const x=EV[i];if(UIS.evf!="all"&&x.type!=UIS.evf)continue;if(q&&!x.x.includes(q))continue;n++;h+=`<div class="r" data-a="evt:${i}">${dstr(x.t)}: ${x.x}</div>`}}
@@ -965,7 +974,7 @@ case"give":if(lead){const o=civs[n],L=actors[o.lead];let g=0;for(const r of["woo
 case"terr":if(lead){const o=civs[n],cl=claims.filter(x=>x.civ==n)[0];if(cl&&aiAccept("territory",c,o))transferClaim(cl,P.civ,"ceded under pressure");else{annoy(P.civ,n,-15);tip(o.n+" refuses to cede land")}}break;
 case"law":if(c)c.law[v]=!c.law[v];break;case"lead":if(lead){c.lead=n;ev("leader",`${fname(P)} appointed ${fname(actors[n])} as leader of ${c.n}`,{who:[n],civ:c.id,imp:true,n:true})}break;
 case"coun":if(c){if(c.coun.includes(n))c.coun=c.coun.filter(g=>g!=n);else if(c.coun.length<3)c.coun.push(n)}break;
-case"mk":UIS.mk=v;break;case"deadtog":UIS.dead^=1;break;case"evf":UIS.evf=v;break;
+case"mk":UIS.mk=v;break;case"deadtog":UIS.dead^=1;break;case"aitog":UIS.playersOnly^=1;break;case"mpplayer":tmSelectedPlayer=v;break;case"mpinvite":tmSendCivInvite(v);break;case"travelrequest":tmSendTravelRequest(v);break;case"travelaccept":tmRespondTravel(v,true);break;case"traveldecline":tmRespondTravel(v,false);break;case"civaccept":tmRespondCiv(v,true);break;case"civdecline":tmRespondCiv(v,false);break;case"evf":UIS.evf=v;break;
 case"newworld":{const s=($("sd")?$("sd").value:"").trim();closeAll();$("end").style.display="none";newGame(s);}break;
 case"loadauto":$("end").style.display="none";loadSlot("auto");break;case"save":saveSlot(v,true);break;case"load":loadSlot(v);break;
 case"key":UIS.rb=v;tip("press the new key for "+KBN[v]);break;case"keyreset":KB=Object.assign({},KBD);saveSet();break;
@@ -1086,35 +1095,40 @@ newGame();requestAnimationFrame(frame)}
 let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[],tmGameMode="single";
 const TM_CHAR_KEY="civexp.multiplayer.characters.v1";
 const TM_SERVER_URL="https://civilization-experiment-server.onrender.com";
-let tmSocket=null,tmRoomCode="",tmRoomAction="",tmRoomReady=false,tmOnlinePlayers=[];
-function tmReadChars(){try{const v=JSON.parse(localStorage.getItem(TM_CHAR_KEY)||"[]");tmChars=Array.isArray(v)?v.slice(0,3):[]}catch(e){tmChars=[]}}
-function tmWriteChars(){try{localStorage.setItem(TM_CHAR_KEY,JSON.stringify(tmChars))}catch(e){}}
-function tmShow(id){document.querySelectorAll("#titleMenu .tm-panel").forEach(p=>p.classList.add("tm-hidden"));$("tm-"+id).classList.remove("tm-hidden")}
-function tmSetMultiplayer(){tmGameMode="multiplayer";gspd=1;$("spd").value="1";$("spd").disabled=true;$("pilotBtn").disabled=true}
-function tmSelectedName(){return tmChars[tmSelectedChar]?.name||"Player"}
+let tmSocket=null,tmRoomCode="",tmRoomAction="",tmRoomReady=false,tmOnlinePlayers=[],tmSelectedPlayer=null,tmPendingTravel=[],tmPendingCiv=[];
+function tmEsc(v){return String(v||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function tmIsCivLeader(){return P&&P.civ>=0&&civs[P.civ]&&civs[P.civ].lead===P.gid}
+function tmRenderPlayers(){if(vis("bk")&&UIS.btab==="people")uiBook()}
 function tmConnect(){
  return new Promise((resolve,reject)=>{
   if(!window.io){reject(new Error("Socket.IO client failed to load. Refresh the page and try again."));return}
   if(tmSocket?.connected){resolve(tmSocket);return}
   if(tmSocket){tmSocket.disconnect();tmSocket=null}
-  const socket=window.io(TM_SERVER_URL,{transports:["websocket","polling"],timeout:15000});
-  tmSocket=socket;
+  const socket=window.io(TM_SERVER_URL,{transports:["websocket","polling"],timeout:15000});tmSocket=socket;
   socket.once("connect",()=>resolve(socket));
   socket.once("connect_error",err=>reject(new Error("Could not connect to multiplayer server: "+err.message)));
   socket.on("disconnect",reason=>{if(reason!=="io client disconnect")console.warn("Multiplayer disconnected:",reason)});
   socket.on("room-players",players=>{tmOnlinePlayers=Array.isArray(players)?players:[];tmRenderPlayers()});
   socket.on("player-joined",player=>{if(player&&!tmOnlinePlayers.some(p=>p.id===player.id))tmOnlinePlayers.push(player);tmRenderPlayers()});
-  socket.on("player-left",player=>{tmOnlinePlayers=tmOnlinePlayers.filter(p=>p.id!==player.id);tmRenderPlayers()});
-  socket.on("player-updated",player=>{console.log("Player update:",player)});
+  socket.on("player-left",player=>{tmOnlinePlayers=tmOnlinePlayers.filter(p=>p.id!==player.id);tmPendingTravel=tmPendingTravel.filter(p=>p.id!==player.id);tmPendingCiv=tmPendingCiv.filter(p=>p.id!==player.id);tmRenderPlayers()});
+  socket.on("player-updated",player=>{const i=tmOnlinePlayers.findIndex(p=>p.id===player.id);if(i>=0)tmOnlinePlayers[i]={...tmOnlinePlayers[i],...player};else tmOnlinePlayers.push(player);tmRenderPlayers()});
+  socket.on("travel-request",p=>{tmPendingTravel.push(p);tmRenderPlayers();tip(p.name+" wants to travel to you. Open World Book → People.")});
+  socket.on("travel-result",p=>{if(!p.accepted){tip(p.name+" declined your travel request.");return}if(p.inCombat||p.onBoat){tip("Travel cancelled: that player is in combat or aboard a boat.");return}const fade=$("tm-travel-fade");fade.classList.add("on");tip("travelling...");setTimeout(()=>{P.x=p.x;P.y=p.y;P.boat=null;cam.x=P.x;cam.y=P.y;fade.classList.remove("on");tip("you arrived at "+p.name+"'s location");},3000)});
+  socket.on("civ-invite",p=>{tmPendingCiv.push(p);tmRenderPlayers();tip(p.name+" invited you to "+p.civName+". Open World Book → People.")});
+  socket.on("civ-result",p=>{if(!p.accepted){tip(p.name+" declined the civilization invitation.");return}tip(p.name+" accepted your civilization invitation.")});
  });
 }
-function tmRenderPlayers(){const panel=$("tm-mp-list"),entries=$("tm-mp-entries");if(!panel||!entries)return;panel.querySelector("b").textContent="PLAYERS IN ROOM ("+tmOnlinePlayers.length+")";entries.innerHTML="";tmOnlinePlayers.forEach((p,i)=>{const row=document.createElement("div");row.className="tm-player";const name=document.createElement("span");name.textContent=p.name||("Player "+(i+1));const you=document.createElement("small");you.textContent=p.id===tmSocket?.id?" (you)":"";row.append(name,you);entries.append(row)})}
-function tmEnterRoom(){tmSetMultiplayer();$("titleMenu").classList.add("tm-hidden");$("tm-mp-list").classList.remove("tm-hidden");tmRenderPlayers();tip("Connected to private room "+tmRoomCode+". Multiplayer connection is active; shared world simulation is the next step.")}
+function tmPublishPlayer(){if(!tmSocket?.connected||tmGameMode!=="multiplayer"||!P)return;tmSocket.emit("player-update",{x:P.x,y:P.y,name:tmSelectedName(),inCombat:!!(P.hitT&&P.hitT>time-2),onBoat:!!P.boat,civName:P.civ>=0&&civs[P.civ]?civs[P.civ].n:""})}
+function tmSendTravelRequest(id){if(!tmSocket?.connected)return tip("not connected to the multiplayer room");tmSocket.emit("travel-request",{targetId:id},r=>tip(r?.ok?"travel request sent":r?.error||"could not send request"))}
+function tmRespondTravel(id,accepted){const p=tmPendingTravel.find(x=>x.id===id);if(!p)return;tmPendingTravel=tmPendingTravel.filter(x=>x.id!==id);if(!tmSocket?.connected)return;tmSocket.emit("travel-response",{requesterId:id,accepted,x:P.x,y:P.y,inCombat:!!(P.hitT&&P.hitT>time-2),onBoat:!!P.boat,name:tmSelectedName()});tmRenderPlayers()}
+function tmSendCivInvite(id){if(!tmIsCivLeader())return tip("only your civilization's leader can invite players");const civName=civs[P.civ].n;tmSocket.emit("civ-invite",{targetId:id,civName},r=>tip(r?.ok?"civilization invitation sent":r?.error||"could not send invitation"))}
+function tmRespondCiv(id,accepted){const p=tmPendingCiv.find(x=>x.id===id);if(!p)return;tmPendingCiv=tmPendingCiv.filter(x=>x.id!==id);tmSocket.emit("civ-response",{inviterId:id,accepted,civName:p.civName},r=>{if(accepted&&r?.ok){let c=civs.find(c=>!c.dead&&c.n===p.civName);if(!c)c=mkCiv(P,p.civName);else if(P.civ!==c.id)join(P,c);tip("you joined "+p.civName)}else if(!accepted)tip("invitation declined");tmRenderPlayers()})}
+function tmEnterRoom(){tmSetMultiplayer();$("titleMenu").classList.add("tm-hidden");tmRenderPlayers();tmPublishPlayer();tip("Connected to private room "+tmRoomCode+". Open World Book → People to view players.")}
 function tmCreatePrivateRoom(){
  tmSetMultiplayer();tmRoomAction="create";tmRoomReady=false;tmRoomCode="";
  $("tm-code").value="";$("tm-code").style.display="none";tmShow("private-code");
  $("tm-private-result").textContent="Connecting to multiplayer server...";
- tmConnect().then(socket=>new Promise((resolve,reject)=>socket.emit("create-room",resolve)))
+ tmConnect().then(socket=>new Promise((resolve,reject)=>socket.emit("create-room",{name:tmSelectedName()},resolve)))
  .then(result=>{if(!result?.ok)throw new Error(result?.error||"Room creation failed.");tmRoomCode=result.code;tmRoomReady=true;$("tm-private-result").textContent="Private room created. Share this invite code with your friend: "+tmRoomCode+". Press Continue to enter.";$("tm-code").style.display="none"})
  .catch(err=>{$("tm-private-result").textContent=err.message;tmRoomReady=false});
 }
@@ -1128,7 +1142,7 @@ function tmSubmitPrivateCode(){
  const code=$("tm-code").value.trim().toUpperCase();
  if(!code){$("tm-private-result").textContent="Enter an invite code.";return}
  tmSetMultiplayer();$("tm-private-result").textContent="Connecting...";
- tmConnect().then(socket=>new Promise(resolve=>socket.emit("join-room",code,resolve)))
+ tmConnect().then(socket=>new Promise(resolve=>socket.emit("join-room",code,tmSelectedName(),resolve)))
  .then(result=>{if(!result?.ok)throw new Error(result?.error||"Could not join that room.");tmRoomCode=result.code;tmRoomReady=true;tmEnterRoom()})
  .catch(err=>{$("tm-private-result").textContent=err.message;tmRoomReady=false});
 }
@@ -1150,5 +1164,5 @@ $("tm-effects").oninput=e=>{vol.s=+e.target.value/100;setVol();$("vs").value=e.t
 $("tm-ambience").oninput=e=>{vol.a=+e.target.value/100;setVol();$("va").value=e.target.value};
 ["slot1","slot2","slot3"].forEach(k=>IDB.get(k+".meta").then(m=>{if(m)SAVEMETA[k]=m; if(!$("titleMenu").classList.contains("tm-hidden")&&!$("tm-saves").classList.contains("tm-hidden"))tmRefreshSaves()}).catch(()=>{}))}
 
-tmMenuInit();init();
+tmMenuInit();init();setInterval(tmPublishPlayer,500);
 </script></body></html>
