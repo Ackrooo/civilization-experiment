@@ -821,7 +821,7 @@ const UIS={iq:"",cq:"",bq:"",chq:"",icat:"all",ccat:"basics",btab:"people",ctab:
 const keys={};let mx=0,my=0,ml=false,pcd=0,cv,ctx,cw,ch,D=1,chI=null,ISEL=null;
 function tip(s){const e=$("tt");e.textContent=s;e.style.display="block";clearTimeout(tip.t);tip.t=setTimeout(()=>e.style.display="none",3800)}
 const mtile=()=>[((mx-cw/2)/zoom+cam.x*16)/16,((my-ch/2)/zoom+cam.y*16)/16];
-const PANS=["inv","cr","bk","cl","mp","st","ch","pf"];
+const PANS=["inv","cr","bk","cl","mp","st","ch","pf","cmd"];
 function closeAll(){for(const q of PANS)$(q).style.display="none";chI=null}
 function togg(id){const v=$(id).style.display=="block";closeAll();if(!v)$(id).style.display="block";snd("ui");uiNow()}
 const actOf=k=>{for(const a in KB)if(KB[a]==k)return a;return null};
