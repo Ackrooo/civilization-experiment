@@ -1103,7 +1103,7 @@ newGame();requestAnimationFrame(frame)}
 let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[],tmGameMode="single",tmPrivateRoom=false,tmIsOwner=false;
 const TM_CHAR_KEY="civexp.multiplayer.characters.v1";
 const TM_SERVER_URL="https://civilization-experiment-server.onrender.com";
-let tmSocket=null,tmRoomCode="",tmOwnerToken="",tmGiveSearch="",tmRoomAction="",tmRoomReady=false,tmOnlinePlayers=[],tmSelectedPlayer=null,tmPendingTravel=[],tmPendingCiv=[];
+let tmSocket=null,tmRoomCode="",tmOwnerToken=(localStorage.getItem("civexp.private.ownerToken")||""),tmGiveSearch="",tmRoomAction="",tmRoomReady=false,tmOnlinePlayers=[],tmSelectedPlayer=null,tmPendingTravel=[],tmPendingCiv=[];
 function tmShow(id){document.querySelectorAll("#titleMenu .tm-panel").forEach(p=>p.classList.add("tm-hidden"));const panel=$("tm-"+id);if(panel)panel.classList.remove("tm-hidden")}
 function tmReadChars(){try{const raw=localStorage.getItem(TM_CHAR_KEY);const parsed=raw?JSON.parse(raw):[];tmChars=Array.isArray(parsed)?parsed.slice(0,3):[]}catch(e){tmChars=[]}while(tmChars.length<3)tmChars.push(null);return tmChars}
 function tmWriteChars(){try{localStorage.setItem(TM_CHAR_KEY,JSON.stringify(tmChars))}catch(e){console.warn("Could not save character profiles:",e)}}
@@ -1280,7 +1280,7 @@ function tmCreatePrivateRoom(){
  $("tm-code").value="";$("tm-code").style.display="none";tmShow("private-code");
  $("tm-private-result").textContent="Connecting to multiplayer server...";
  tmConnect().then(socket=>new Promise((resolve,reject)=>socket.emit("create-room",{name:tmSelectedName(),ownerToken:tmOwnerToken},resolve)))
- .then(result=>{if(!result?.ok)throw new Error(result?.error||"Room creation failed.");tmRoomCode=result.code;tmIsOwner=true;tmRoomReady=true;tmRenderOwnerControls();$("tm-private-result").textContent="Private room created. Share this invite code with your friend: "+tmRoomCode+". Press Continue to enter.";$("tm-code").style.display="none"})
+ .then(result=>{if(!result?.ok)throw new Error(result?.error||"Room creation failed.");tmRoomCode=result.code;localStorage.setItem("civexp.private.roomCode",tmRoomCode);localStorage.setItem("civexp.private.ownerToken",tmOwnerToken);tmIsOwner=true;tmRoomReady=true;tmRenderOwnerControls();$("tm-private-result").textContent="Private room created. Share this invite code with your friend: "+tmRoomCode+". Press Continue to enter.";$("tm-code").style.display="none"})
  .catch(err=>{$("tm-private-result").textContent=err.message;tmRoomReady=false});
 }
 function tmJoinPrivateRoom(){
@@ -1293,8 +1293,9 @@ function tmSubmitPrivateCode(){
  const code=$("tm-code").value.trim().toUpperCase();
  if(!code){$("tm-private-result").textContent="Enter an invite code.";return}
  tmSetMultiplayer();$("tm-private-result").textContent="Connecting...";
- tmConnect().then(socket=>new Promise(resolve=>socket.emit("join-room",{code,name:tmSelectedName()},resolve)))
- .then(result=>{if(!result?.ok)throw new Error(result?.error||"Could not join that room.");tmRoomCode=result.code;tmIsOwner=!!result.owner;tmRoomReady=true;tmEnterRoom()})
+ const savedCode=localStorage.getItem("civexp.private.roomCode")||"",savedToken=localStorage.getItem("civexp.private.ownerToken")||"";const reconnectOwner=code===savedCode&&!!savedToken;
+ tmConnect().then(socket=>new Promise(resolve=>socket.emit("join-room",{code,name:tmSelectedName(),ownerToken:reconnectOwner?savedToken:""},resolve)))
+ .then(result=>{if(!result?.ok)throw new Error(result?.error||"Could not join that room.");tmRoomCode=result.code;tmIsOwner=!!result.owner;tmOwnerToken=tmIsOwner?savedToken:"";tmRoomReady=true;tmEnterRoom()})
  .catch(err=>{$("tm-private-result").textContent=err.message;tmRoomReady=false});
 }
 function tmRefreshSaves(){const el=$("tm-save-list");el.innerHTML="";["slot1","slot2","slot3"].forEach((k,i)=>{const meta=SAVEMETA[k]||"Empty slot";const row=document.createElement("div");row.className="tm-slot";const info=document.createElement("div");info.innerHTML="<b>Save "+(i+1)+"</b><small>"+(meta==="Empty slot"?"No saved world":String(meta).replace(/[&<>"]/g,""))+"</small>";const btn=document.createElement("button");btn.className="tm-btn secondary";btn.textContent=meta==="Empty slot"?"Empty":"Load";btn.disabled=meta==="Empty slot";btn.onclick=async()=>{const raw=await IDB.get(k).catch(()=>null);if(!raw){tip("No save in "+k);return}await loadSlot(k);$("titleMenu").classList.add("tm-hidden")};row.append(info,btn);el.append(row)})}
