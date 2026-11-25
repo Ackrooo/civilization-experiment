@@ -120,7 +120,12 @@ hr{border:0;border-top:1px solid var(--ln)}
  </section>
  <section class="tm-panel tm-hidden" id="tm-settings">
   <h1 class="tm-title">SETTINGS</h1>
-  <p class="tm-note">Additional game settings are available after entering a singleplayer world.</p>
+  
+  <label class="tm-label" for="tm-music">Music volume</label><input id="tm-music" type="range" min="0" max="100" value="50" style="width:min(300px,90%)">
+  <label class="tm-label" for="tm-effects">Effects volume</label><input id="tm-effects" type="range" min="0" max="100" value="70" style="width:min(300px,90%)">
+  <label class="tm-label" for="tm-ambience">Ambience volume</label><input id="tm-ambience" type="range" min="0" max="100" value="50" style="width:min(300px,90%)">
+  <div class="tm-row"><button class="tm-btn secondary" data-tm="fullscreen">Fullscreen</button></div>
+  <p class="tm-note">More settings are available in-game.</p>
   <button class="tm-btn secondary tm-back" data-tm="main">Back</button>
  </section>
  <section class="tm-panel tm-hidden" id="tm-credits">
@@ -1075,7 +1080,7 @@ newGame();requestAnimationFrame(frame)}
 
 
 /* Main menu and save/character selection */
-let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[];
+let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[],tmGameMode="single";
 const TM_CHAR_KEY="civexp.multiplayer.characters.v1";
 function tmReadChars(){try{const v=JSON.parse(localStorage.getItem(TM_CHAR_KEY)||"[]");tmChars=Array.isArray(v)?v.slice(0,3):[]}catch(e){tmChars=[]}}
 function tmWriteChars(){try{localStorage.setItem(TM_CHAR_KEY,JSON.stringify(tmChars))}catch(e){}}
@@ -1083,7 +1088,7 @@ function tmShow(id){document.querySelectorAll("#titleMenu .tm-panel").forEach(p=
 function tmRefreshSaves(){const el=$("tm-save-list");el.innerHTML="";["slot1","slot2","slot3"].forEach((k,i)=>{const meta=SAVEMETA[k]||"Empty slot";const row=document.createElement("div");row.className="tm-slot";const info=document.createElement("div");info.innerHTML="<b>Save "+(i+1)+"</b><small>"+(meta==="Empty slot"?"No saved world":String(meta).replace(/[&<>"]/g,""))+"</small>";const btn=document.createElement("button");btn.className="tm-btn secondary";btn.textContent=meta==="Empty slot"?"Empty":"Load";btn.disabled=meta==="Empty slot";btn.onclick=async()=>{const raw=await IDB.get(k).catch(()=>null);if(!raw){tip("No save in "+k);return}await loadSlot(k);$("titleMenu").classList.add("tm-hidden")};row.append(info,btn);el.append(row)})}
 function tmRefreshChars(){tmReadChars();const el=$("tm-char-list");el.innerHTML="";for(let i=0;i<3;i++){const c=tmChars[i],row=document.createElement("div");row.className="tm-slot";const info=document.createElement("div");info.innerHTML=c?"<b>"+String(c.name).replace(/[&<>"]/g,"")+"</b><small>Character slot "+(i+1)+" · profile saved on this device</small>":"<b>Empty character slot "+(i+1)+"</b><small>No character created</small>";const btn=document.createElement("button");btn.className="tm-btn secondary";btn.textContent=c?"Select": "Create";btn.onclick=()=>{if(c){tmSelectedChar=i;tmShow("servers")}else{tmEditingChar=i;$("tm-char-name").value="";tmShow("char-editor")}};row.append(info,btn);el.append(row)}}
 function tmMenuInit(){tmReadChars();$("titleMenu").classList.remove("tm-hidden");tmShow("main");document.addEventListener("click",e=>{const b=e.target.closest("[data-tm]");if(!b)return;const a=b.dataset.tm;
-if(a==="main"||a==="play"||a==="single"||a==="multi"||a==="characters"||a==="servers"||a==="private"||a==="settings"||a==="credits"){if(a==="play")tmShow("play");else if(a==="single"){tmRefreshSaves();tmShow("saves")}else if(a==="multi"){tmRefreshChars();tmShow("characters")}else tmShow(a);return}
+if(a==="main"||a==="play"||a==="single"||a==="multi"||a==="characters"||a==="servers"||a==="private"||a==="settings"||a==="credits"){if(a==="play")tmShow("play");else if(a==="single"){tmGameMode="single";tmRefreshSaves();tmShow("saves")}else if(a==="multi"){tmGameMode="multiplayer";tmRefreshChars();tmShow("characters")}else tmShow(a);return}
 if(a==="newworld"){const seed=prompt("World seed (leave blank for a random world):","");newGame(seed||"");$("titleMenu").classList.add("tm-hidden");return}
 if(a==="createchar"){if(tmChars.length>=3){alert("All three character slots are occupied.");return}tmEditingChar=[0,1,2].find(i=>!tmChars[i]);$("tm-char-name").value="";tmShow("char-editor");return}
 if(a==="savechar"){const name=$("tm-char-name").value.trim();if(!name){alert("Enter a character name.");return}tmChars[tmEditingChar]={name,color:$("tm-char-color").value,items:[],equipment:{},created:Date.now()};tmWriteChars();tmRefreshChars();tmShow("characters");return}
@@ -1091,7 +1096,12 @@ if(a==="server1"||a==="server2"||a==="server3"){tmShow("servers");$("tm-private-
 if(a==="createprivate"){tmShow("private-code");$("tm-private-result").textContent="Private server creation requires the multiplayer backend. No working invite code can be issued yet.";return}
 if(a==="joinprivate"){tmShow("private-code");$("tm-private-result").textContent="Enter your friend's invite code once the multiplayer backend is online.";return}
 if(a==="submitcode"){alert("Private server joining is not available until the multiplayer backend is connected.");return}
-});["slot1","slot2","slot3"].forEach(k=>IDB.get(k+".meta").then(m=>{if(m)SAVEMETA[k]=m; if(!$("titleMenu").classList.contains("tm-hidden")&&!$("tm-saves").classList.contains("tm-hidden"))tmRefreshSaves()}).catch(()=>{}))}
+if(a==="fullscreen"){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.();return}
+});
+$("tm-music").oninput=e=>{vol.m=+e.target.value/100;setVol();$("vm").value=e.target.value};
+$("tm-effects").oninput=e=>{vol.s=+e.target.value/100;setVol();$("vs").value=e.target.value};
+$("tm-ambience").oninput=e=>{vol.a=+e.target.value/100;setVol();$("va").value=e.target.value};
+["slot1","slot2","slot3"].forEach(k=>IDB.get(k+".meta").then(m=>{if(m)SAVEMETA[k]=m; if(!$("titleMenu").classList.contains("tm-hidden")&&!$("tm-saves").classList.contains("tm-hidden"))tmRefreshSaves()}).catch(()=>{}))}
 
 init();tmMenuInit();
 </script></body></html>
