@@ -1122,7 +1122,7 @@ function tmBuildCommands(){
  for(const p of presets)addCmd("preset:"+p,"Build "+p,"building","Create a themed structure layout near you");
  for(const id of Object.keys(IT))addCmd("give:"+id+":1","Give 1 "+IT[id].n,"items","Add one item directly to your inventory");
  for(const id of Object.keys(IT).slice(0,28))addCmd("give:"+id+":64","Give 64 "+IT[id].n,"items","Add a full stack directly to your inventory");
- while(out.length<200){const n=out.length+1;addCmd("effect:celebrate:"+n,"World chaos event "+n,"world","Trigger a randomized world event")}
+ while(out.length<200){const n=out.length+1;addCmd("chaos:"+n,"World chaos event "+n,"world","Trigger a different randomized world event")}
  return out.slice(0,200);
 }
 const TM_COMMANDS=tmBuildCommands();
@@ -1133,6 +1133,20 @@ function tmRunCommand(id,fromServer){
  if(kind==="weather"){WX.t=arg;WX.nx=120;WX.i=arg==="clear"?0:Math.max(WX.i,.75);tip("weather changed to "+arg);return}
  if(kind==="time"){if(arg==="day")time=Math.floor(time/DAY)*DAY+DAY;else if(arg==="night")time=Math.floor(time/DAY)*DAY+DAY*.78;else time=Math.floor(time/DAY)*DAY+(+arg/24)*DAY;tip("time changed");return}
  if(kind==="season"){const idx={spring:0,summer:1,autumn:2,winter:3}[arg];if(idx!=null)time=Math.floor(time/YEAR)*YEAR+idx*SEAS;tip("season changed to "+arg);return}
+ if(kind==="chaos"){const n=+arg;switch(n%12){
+  case 0:WX.t="storm";WX.i=1;WX.nx=180;for(let i=0;i<10;i++)spawnAn();break;
+  case 1:for(let i=0;i<25;i++)spawnAn();break;
+  case 2:for(let i=0;i<12;i++){const x=(P.x+rr()*30-15)|0,y=(P.y+rr()*30-15)|0;if(freeSpot(x,y))mkActor(true,x+.5,y+.5,{n:nm()})}break;
+  case 3:tmBuildPreset("fort");break;
+  case 4:tmBuildPreset("farm");break;
+  case 5:WX.t="snowstorm";WX.i=1;WX.nx=180;break;
+  case 6:time=Math.floor(time/DAY)*DAY+DAY*.9;break;
+  case 7:time=Math.floor(time/DAY)*DAY+DAY*.35;break;
+  case 8:for(let i=0;i<20;i++)drops.push({x:P.x+rr()*18-9,y:P.y+rr()*18-9,id:pick(Object.keys(IT).filter(k=>IT[k].cat==="material")),n:1});break;
+  case 9:tmBuildPreset("village");break;
+  case 10:for(const a of actors)if(al(a)&&Math.hypot(a.x-P.x,a.y-P.y)<45){a.hun=100;a.hp=100;a.th=0;a.tgt=null}break;
+  case 11:for(let i=0;i<8;i++){const x=(P.x+rr()*24-12)|0,y=(P.y+rr()*24-12)|0;if(freeSpot(x,y))mkActor(true,x+.5,y+.5,{n:nm()})}WX.fl=1;break;
+ }tip("chaos event "+n+" triggered");return}
  if(kind==="spawn"&&arg==="people"){for(let i=0;i<qty;i++){let x=P.x,y=P.y;for(let n=0;n<40;n++){const tx=(P.x+rr()*20-10)|0,ty=(P.y+rr()*20-10)|0;if(freeSpot(tx,ty)){x=tx+.5;y=ty+.5;break}}mkActor(true,x,y,{n:nm()})}tip("spawned "+qty+" people");return}
  if(kind==="spawn"&&arg==="animals"){for(let i=0;i<qty;i++)spawnAn();tip("spawned "+qty+" animals");return}
  if(kind==="build"){if(!IT[arg])return;let made=0;for(let r=1;r<18&&!made;r++)for(let dy=-r;dy<=r&&!made;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=(P.x|0)+dx,y=(P.y|0)+dy;if(canPut(arg,x,y)){add(P,arg,1);if(put(P,arg,x,y)){made++;break}}}tip(made?"placed "+IT[arg].n:"no room to place that structure");return}
