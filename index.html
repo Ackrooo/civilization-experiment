@@ -41,10 +41,10 @@ hr{border:0;border-top:1px solid var(--ln)}
 .tm-slot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px;background:#171714;border:1px solid #5e5038;color:#e9dec7;font:14px Arial,sans-serif}
 .tm-slot small{display:block;color:#a99a7d;margin-top:4px}
 .tm-row{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin:12px 0}
-.tm-input{width:min(300px,90%);padding:12px;background:#111;color:#eee;border:1px solid #806b45;font:15px Arial,sans-serif}
+.tm-input{width:min(300px,90%);padding:12px;background:#111;color:#eee;border:1px solid #806b45;font:15px Arial,sans-serif}#tm-code{display:block;margin:0 auto;text-align:center;box-sizing:border-box}
 .tm-label{display:block;color:#c8b895;font:12px Arial,sans-serif;text-align:left;margin:12px auto 5px;max-width:300px}
 .tm-hidden{display:none!important}
-@media(max-width:520px){.tm-panel{padding:26px 18px}.tm-title{margin-bottom:24px}}
+@media(max-width:520px){.tm-panel{padding:26px 18px}.tm-title{margin-bottom:24px}}\n#tm-mp-list{position:fixed;z-index:9998;right:14px;top:14px;width:210px;padding:12px;background:rgba(24,22,18,.96);border:1px solid #806b45;color:#e9dec7;font:13px Arial,sans-serif;box-shadow:0 8px 28px #0008}#tm-mp-list b{display:block;margin-bottom:8px;color:#c49b58;letter-spacing:.08em}#tm-mp-list .tm-player{padding:5px 0;border-top:1px solid #5e5038}#tm-mp-list .tm-player small{color:#a99a7d}#tm-mp-list.tm-hidden{display:none!important}
 </style></head><body>
 <canvas id="cv"></canvas>
 <div id="ui">
@@ -65,7 +65,7 @@ hr{border:0;border-top:1px solid var(--ln)}
 <div id="hint">wasd move · click harvest/attack · right click use/remove · e interact · f5 save · f9 load · home recenter · c i t v m</div>
 </div>
 
-<div id="titleMenu">
+<div id="tm-mp-list" class="tm-hidden"><b>PLAYERS IN ROOM (0)</b><div id="tm-mp-entries"></div></div>\n<div id="titleMenu">
  <section class="tm-panel" id="tm-main">
   <h1 class="tm-title">CIVILIZATION<span>EXPERIMENT</span></h1>
   <div class="tm-actions">
@@ -1100,13 +1100,13 @@ function tmConnect(){
   socket.once("connect",()=>resolve(socket));
   socket.once("connect_error",err=>reject(new Error("Could not connect to multiplayer server: "+err.message)));
   socket.on("disconnect",reason=>{if(reason!=="io client disconnect")console.warn("Multiplayer disconnected:",reason)});
-  socket.on("room-players",players=>{tmOnlinePlayers=Array.isArray(players)?players:[]});
-  socket.on("player-joined",player=>{console.log("Player joined room:",player)});
-  socket.on("player-left",player=>{console.log("Player left room:",player)});
+  socket.on("room-players",players=>{tmOnlinePlayers=Array.isArray(players)?players:[];tmRenderPlayers()});
+  socket.on("player-joined",player=>{if(player&&!tmOnlinePlayers.some(p=>p.id===player.id))tmOnlinePlayers.push(player);tmRenderPlayers()});
+  socket.on("player-left",player=>{tmOnlinePlayers=tmOnlinePlayers.filter(p=>p.id!==player.id);tmRenderPlayers()});
   socket.on("player-updated",player=>{console.log("Player update:",player)});
  });
 }
-function tmEnterRoom(){tmSetMultiplayer();$("titleMenu").classList.add("tm-hidden");tip("Connected to private room "+tmRoomCode+". Multiplayer connection is active; shared world simulation is the next step.")}
+function tmRenderPlayers(){const panel=$("tm-mp-list"),entries=$("tm-mp-entries");if(!panel||!entries)return;panel.querySelector("b").textContent="PLAYERS IN ROOM ("+tmOnlinePlayers.length+")";entries.innerHTML="";tmOnlinePlayers.forEach((p,i)=>{const row=document.createElement("div");row.className="tm-player";const name=document.createElement("span");name.textContent=p.name||("Player "+(i+1));const you=document.createElement("small");you.textContent=p.id===tmSocket?.id?" (you)":"";row.append(name,you);entries.append(row)})}\nfunction tmEnterRoom(){tmSetMultiplayer();$("titleMenu").classList.add("tm-hidden");$("tm-mp-list").classList.remove("tm-hidden");tmRenderPlayers();tip("Connected to private room "+tmRoomCode+". Multiplayer connection is active; shared world simulation is the next step.")}
 function tmCreatePrivateRoom(){
  tmSetMultiplayer();tmRoomAction="create";tmRoomReady=false;tmRoomCode="";
  $("tm-code").value="";$("tm-code").style.display="none";tmShow("private-code");
