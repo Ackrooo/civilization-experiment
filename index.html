@@ -1339,7 +1339,8 @@ function tmConnect(){
   socket.once("connect",()=>resolve(socket));
   socket.on("connect",()=>{tmJoinedSocketId="";if(tmPublicServer!=null){tmJoinPublicSocket(socket);return}if(tmPrivateRoom&&tmRoomCode){socket.emit("join-room",{code:tmRoomCode,name:tmSelectedName(),ownerToken:tmOwnerToken||""},r=>{if(r?.ok){tmIsOwner=!!r.owner;tmRenderOwnerControls();tmPublishPlayer()}else{tmIsOwner=false;tmRenderOwnerControls();tip(r?.error||"Could not reconnect to private server.")}})}});
   socket.once("connect_error",err=>reject(new Error("Could not connect to multiplayer server: "+err.message)));
-  socket.on("owner-changed",p=>{tmIsOwner=!!(p&&p.id===socket.id);tmOnlinePlayers=tmOnlinePlayers.map(x=>({...x,owner:x.id===p?.id}));tmRenderOwnerControls();tip(tmIsOwner?"you are now the private server owner":"private server ownership changed")});
+  socket.on("world-seed",p=>{if(p&&Number.isFinite(Number(p.seed))){newGame(String(p.seed));tmSetMultiplayer();tmPublishPlayer();tip("joined the shared multiplayer world")}});
+   socket.on("owner-changed",p=>{tmIsOwner=!!(p&&p.id===socket.id);tmOnlinePlayers=tmOnlinePlayers.map(x=>({...x,owner:x.id===p?.id}));tmRenderOwnerControls();tip(tmIsOwner?"you are now the private server owner":"private server ownership changed")});
   socket.on("owner-command",p=>{if(p&&p.commandId)tmOwnerCommand(p.commandId)});
   socket.on("server-reset",p=>{if(p&&p.seed){newGame(String(p.seed));tmSetMultiplayer();tip("the private server owner reset the world") }});
   socket.on("disconnect",reason=>{if(reason!=="io client disconnect")console.warn("Multiplayer disconnected:",reason)});
@@ -1348,7 +1349,7 @@ function tmConnect(){
   socket.on("player-left",player=>{tmOnlinePlayers=tmOnlinePlayers.filter(p=>p.id!==player.id);tmPendingTravel=tmPendingTravel.filter(p=>p.id!==player.id);tmPendingCiv=tmPendingCiv.filter(p=>p.id!==player.id);tmRenderPlayers()});
   socket.on("player-updated",player=>{const i=tmOnlinePlayers.findIndex(p=>p.id===player.id);if(i>=0)tmOnlinePlayers[i]={...tmOnlinePlayers[i],...player};else tmOnlinePlayers.push(player);tmRenderPlayers()});
   socket.on("travel-request",p=>{tmPendingTravel.push(p);tmRenderPlayers();tip(p.name+" wants to travel to you. Open World Book → People.")});
-  socket.on("travel-result",p=>{if(!p.accepted){tip(p.name+" declined your travel request.");return}if(p.inCombat||p.onBoat){tip("Travel cancelled: that player is in combat or aboard a boat.");return}const fade=$("tm-travel-fade");fade.classList.add("on");tip("travelling...");setTimeout(()=>{P.x=p.x;P.y=p.y;P.boat=null;cam.x=P.x;cam.y=P.y;fade.classList.remove("on");tip("you arrived at "+p.name+"'s location");},3000)});
+  socket.on("travel-result",p=>{if(!p.accepted){tip(p.name+" declined your travel request.");return}if(p.inCombat||p.onBoat){tip("Travel cancelled: that player is in combat or aboard a boat.");return}if(!P||!Number.isFinite(Number(p.x))||!Number.isFinite(Number(p.y))){tip("Travel failed: destination coordinates were invalid.");return}const fade=$("tm-travel-fade");fade.classList.add("on");tip("travelling...");setTimeout(()=>{P.x=clamp(Number(p.x),1,WS-2);P.y=clamp(Number(p.y),1,WS-2);P.boat=null;P.vx=0;P.vy=0;cam.x=P.x;cam.y=P.y;UIS.track=null;fade.classList.remove("on");tip("you arrived at "+p.name+"'s location");tmPublishPlayer()},3000)});
   socket.on("civ-invite",p=>{tmPendingCiv.push(p);tmRenderPlayers();tip(p.name+" invited you to "+p.civName+". Open World Book → People.")});
   socket.on("civ-result",p=>{if(!p.accepted){tip(p.name+" declined the civilization invitation.");return}tip(p.name+" accepted your civilization invitation.")});
  });
