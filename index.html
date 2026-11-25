@@ -1094,7 +1094,7 @@ function dioDraw(){
  if(!dioBoss||dioBoss.hp<=0)return;
  const b=dioBoss,stopped=performance.now()<dioStopUntil,pending=dioStopPending;
  const x=(b.x-cam.x)*16*zoom+cw/2,y=(b.y-cam.y)*16*zoom+ch/2;
- ctx.save();ctx.scale(zoom,zoom);ctx.translate(x,y);
+ ctx.save();ctx.translate(x,y);ctx.scale(zoom,zoom);
  ctx.fillStyle="#0009";ctx.fillRect(-43,17,62,6);
  // THE WORLD: muscular gold armor, segmented shoulder tubing and angular helmet.
  ctx.fillStyle="#c99b35";ctx.fillRect(-43,3,9,14);ctx.fillRect(-29,3,9,14);
