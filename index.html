@@ -1066,7 +1066,7 @@ if(isSnow()&&SET.part){ctx.fillStyle="rgba(255,255,255,.85)";const n=Math.floor(
 let last=performance.now();
 let dioBoss=null,dioStopUntil=0,dioNextStop=0,dioStopPendingUntil=0,dioStopPending=false,dioAnim=0,dioHitAt=0,dioWasStopped=false;
 function dioAudio(id){const el=$(id);if(!el)return;["dioTheme","dioStopAudio","dioResumeAudio","dioBarrageAudio"].forEach(k=>{const q=$(k);if(q&&q!==el){q.pause();if(k!=="dioTheme")q.currentTime=0}});const dist=dioBoss&&P?Math.hypot(dioBoss.x-P.x,dioBoss.y-P.y):0;el.volume=vol.m*Math.max(.08,1-dist/42);if(id==="dioTheme"&&G.m)G.m.gain.value=0;el.currentTime=0;el.play().catch(()=>{});}
-function dioSpawn(){if(dioBoss&&dioBoss.hp>0)return tip("DIO is already here.");const ang=rr()*Math.PI*2,dist=50;dioBoss={x:clamp(P.x+Math.cos(ang)*dist,4,WS-4),y:clamp(P.y+Math.sin(ang)*dist,4,WS-4),hp:500,maxHp:500,fl:-1,attack:0,teleportNext:performance.now()+6500};dioStopUntil=0;dioNextStop=performance.now()+30000;dioStopPending=false;dioStopPendingUntil=0;dioWasStopped=false;dioAudio("dioTheme");tip("DIO BRANDO has entered the world.");}
+function dioSpawn(){if(dioBoss&&dioBoss.hp>0)return tip("DIO is already here.");const ang=rr()*Math.PI*2,dist=50;dioBoss={x:clamp(P.x+Math.cos(ang)*dist,4,WS-4),y:clamp(P.y+Math.sin(ang)*dist,4,WS-4),hp:500,maxHp:500,fl:-1,attack:0,teleportNext:performance.now()+2500};dioStopUntil=0;dioNextStop=performance.now()+30000;dioStopPending=false;dioStopPendingUntil=0;dioWasStopped=false;dioAudio("dioTheme");tip("DIO BRANDO has entered the world.");}
 function dioTarget(){let t=P,d=Math.hypot(P.x-dioBoss.x,P.y-dioBoss.y);for(const a of actors){if(a===P||a.dead||!a.ai)continue;const q=Math.hypot(a.x-dioBoss.x,a.y-dioBoss.y);if(q<d){d=q;t=a}}return t;}
 function dioTick(dt){
  if(!dioBoss||dioBoss.hp<=0)return;
@@ -1077,7 +1077,7 @@ function dioTick(dt){
  }
  if(now<dioStopUntil){
   const t=dioTarget(),dx=t.x-b.x,dy=t.y-b.y,d=Math.hypot(dx,dy)||1;b.fl=dx>=0?1:-1;
-  if(now>(b.teleportNext||0)&&d>3){const ang=Math.atan2(dy,dx)+Math.PI+(rr()-.5)*1.1;const tx=clamp(t.x+Math.cos(ang)*2.2,3,WS-4),ty=clamp(t.y+Math.sin(ang)*2.2,3,WS-4);b.x=tx;b.y=ty;b.teleportNext=now+6500;burst(1500,2,.22,.3);tip("DIO vanished — THE WORLD");}
+  if(now>(b.teleportNext||0)&&d>12){const ang=Math.atan2(dy,dx)+Math.PI+(rr()-.5)*.8;const tx=clamp(t.x+Math.cos(ang)*2.5,3,WS-4),ty=clamp(t.y+Math.sin(ang)*2.5,3,WS-4);b.x=tx;b.y=ty;b.teleportNext=now+3000;burst(1500,2,.22,.3);tip("DIO vanished — THE WORLD");}
   else if(d>1.15){b.x+=dx/d*Math.min(8*dt,d-1.05);b.y+=dy/d*Math.min(8*dt,d-1.05)}
   else if(now-dioHitAt>550){dioHitAt=now;if(t===P){P.hp=Math.max(0,P.hp-15);P.hitT=time+1;if(P.hp<=0)die(P,"DIO");}else{t.hp=Math.max(0,(t.hp||100)-15);t.hitT=time+1;if(t.hp<=0){t.dead=1;t.deathT=time}}}
   return;
@@ -1085,10 +1085,10 @@ function dioTick(dt){
  if(dioWasStopped&&now>=dioStopUntil){dioWasStopped=false;dioAudio("dioResumeAudio");if(G.m)G.m.gain.value=vol.m*.4;ambTick();setTimeout(()=>dioAudio("dioTheme"),3250);tip("THE WORLD has ended.");}
  if(now>=dioNextStop&&!dioStopPending){dioStopPending=true;dioStopPendingUntil=now+2000;["dioTheme","dioResumeAudio","dioBarrageAudio"].forEach(k=>$(k)?.pause());dioAudio("dioStopAudio");tip("DIO: THE WORLD!");return;}
  const t=dioTarget(),dx=t.x-b.x,dy=t.y-b.y,d=Math.hypot(dx,dy)||1;b.fl=dx>=0?1:-1;b.attack-=dt;
- if(now>(b.teleportNext||0)&&d>5){const ang=Math.atan2(dy,dx)+Math.PI+(rr()-.5)*.8;b.x=clamp(t.x+Math.cos(ang)*2.5,3,WS-4);b.y=clamp(t.y+Math.sin(ang)*2.5,3,WS-4);b.teleportNext=now+6500;burst(1200,2,.18,.2);}
+ if(now>(b.teleportNext||0)&&d>12){const ang=Math.atan2(dy,dx)+Math.PI+(rr()-.5)*.8;b.x=clamp(t.x+Math.cos(ang)*2.5,3,WS-4);b.y=clamp(t.y+Math.sin(ang)*2.5,3,WS-4);b.teleportNext=now+3000;burst(1200,2,.18,.2);}
  else if(d>1.2){b.x+=dx/d*Math.min(2.5*dt,d-1.1);b.y+=dy/d*Math.min(2.5*dt,d-1.1)}
  else if(b.attack<=0){b.attack=1.1;if(t===P){P.hp=Math.max(0,P.hp-10);P.hitT=time+1;if(P.hp<=0)die(P,"DIO");}else{t.hp=Math.max(0,(t.hp||100)-10);if(t.hp<=0)t.dead=1}}
- if(d<3&&now>(b.barrageNext||0)){b.barrageNext=now+10000;b.barrageUntil=now+900;dioAudio("dioBarrageAudio");if(t===P){P.hp=Math.max(0,P.hp-30);P.hitT=time+1;if(P.hp<=0)die(P,"DIO");}else{t.hp=Math.max(0,(t.hp||100)-30);if(t.hp<=0)t.dead=1}}
+ const actualRange=Math.hypot(t.x-b.x,t.y-b.y);if(actualRange<=2.2&&now>(b.barrageNext||0)){b.barrageNext=now+10000;b.barrageUntil=now+900;dioAudio("dioBarrageAudio");if(t===P){P.hp=Math.max(0,P.hp-30);P.hitT=time+1;if(P.hp<=0)die(P,"DIO");}else if(!t.dead){t.hp=Math.max(0,(t.hp||100)-30);if(t.hp<=0){t.dead=1;t.deathT=time}}}
 }
 function dioDraw(){
  if(!dioBoss||dioBoss.hp<=0)return;
