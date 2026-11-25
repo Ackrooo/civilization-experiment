@@ -347,7 +347,7 @@ function houseGeo(x,y){const w=rot&1?4:5,h=rot&1?5:4;return{x0:x-(w>>1),y0:y-(h>
 function freeSpot(x,y){if(!wr(x,y))return false;const i=li(x,y);return land(T[i])&&!O[i]&&!B[i]&&!Rf[i]}
 function canPut(id,x,y){if(!wr(x,y))return false;const i=li(x,y),t=T[i],d=IT[id];if(d.boat)return t<=1&&!B[i]&&!boats.some(r=>(r.x|0)==x&&(r.y|0)==y);
 if(id=="house"){const g=houseGeo(x,y);for(let j=0;j<g.h;j++)for(let k=0;k<g.w;k++)if(!freeSpot(g.x0+k,g.y0+j))return false;return true}
-if(id=="door"||id=="gate")return B[i]==2||(land(t)&&!O[i]&&!B[i]);if(id=="roof")return land(t)&&!Rf[i];if(id=="farm")return(t==3||t==8||t==4)&&!O[i]&&!B[i];return land(t)&&!O[i]&&!B[i]}
+if(id=="floor")return land(t)&&!O[i]&&(B[i]==0||B[i]==1);if(id=="wall")return land(t)&&!O[i]&&(B[i]==0||B[i]==1);if(id=="door"||id=="gate")return B[i]==2||B[i]==1||(land(t)&&!O[i]&&!B[i]);if(id=="roof")return land(t)&&!Rf[i];if(id=="farm")return(t==3||t==8||t==4)&&!O[i]&&!B[i];return land(t)&&!O[i]&&!B[i]}
 function put(a,id,x,y){if(!canPut(id,x,y))return false;const d=IT[id];
 if(d.boat){boats.push({x:x+.5,y:y+.5,k:id,du:BS[id].du,inv:BS[id].cap?Array(BS[id].cap).fill(null):null});take(a,id,1);snd("splash",a);return true}
 if(id=="house"){const g=houseGeo(x,y);for(let j=0;j<g.h;j++)for(let k=0;k<g.w;k++){const i=li(g.x0+k,g.y0+j);B[i]=(k==0||j==0||k==g.w-1||j==g.h-1)?2:1;Rf[i]=1}const dx=rot&1?g.x0+g.w-1:g.x0+(g.w>>1),dy=rot&1?g.y0+(g.h>>1):g.y0+g.h-1;B[li(dx,dy)]=3;if(a===P)ST.built+=5;a.hs++;note("build","house",a)}
@@ -592,8 +592,15 @@ function plan(a,g,dep){const r=RC[g];if(!r)return;for(const k in r.in)if(avail(a
 if(r.st&&!stationNear(a,r.st)){const s=nearestStr(a,r.st==11?[11,19]:[r.st]);if(s){a.tgt={x:s.x+.5,y:s.y+.5,stand:2.2};a.hold=time+12;a.doing="heading to the "+IT[BI[s.t]].n;return}if(dep<4)return plan(a,{11:"workbench",13:"furnace",20:"anvil",21:"cookstation",19:"workbench2"}[r.st],dep+1);return}
 if(!(r.req||[]).every(q=>a.cr.has(q))){const q=r.req.find(z=>!a.cr.has(z));if(dep<5)return plan(a,q,dep+1);return}
 if(craft(a,g)=="ok"){a.doing="crafted "+r.n;snd("craft",a);if(PB[g]!=null&&g!="floor"&&g!="wall"&&g!="door"&&g!="stonewall"||g=="house")placeAI(a,g)}else a.doing="thinking"}
-function placeAI(a,g){for(let k=0;k<80;k++){const x=a.base.x+(rr()*20-10)|0,y=a.base.y+(rr()*16-8)|0;rot=rr()<.5?0:1;if(g=="bed"){let f=false;for(let n=0;n<30&&!f;n++){const bx=a.base.x+(rr()*14-7|0),by=a.base.y+(rr()*14-7|0);if(wr(bx,by)&&B[li(bx,by)]==1&&Rf[li(bx,by)]&&!O[li(bx,by)]){B[li(bx,by)]=22;STR.push({t:22,x:bx,y:by});take(a,"bed",1);f=true}}if(f){a.doing="made a bed";return}}
-if(canPut(g,x,y)&&put(a,g,x,y)){if(g=="farm")a.fm++;a.doing="built a "+IT[g].n;return}}}
+function placeAI(a,g){
+ if(g=="bed"){let f=false;for(let n=0;n<70&&!f;n++){const bx=(a.base.x+(rr()*18-9))|0,by=(a.base.y+(rr()*18-9))|0;if(wr(bx,by)&&B[li(bx,by)]==1&&Rf[li(bx,by)]&&!O[li(bx,by)]){B[li(bx,by)]=22;STR.push({t:22,x:bx,y:by,owner:a.gid,civ:a.civ});take(a,"bed",1);f=true}}if(f){a.doing="made a bed";return}}
+ for(let r=2;r<=16;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=(a.base.x|0)+dx,y=(a.base.y|0)+dy;rot=(a.gid+x+y)&1;if(!canPut(g,x,y)||!put(a,g,x,y))continue;if(g=="farm")a.fm++;a.doing="built a "+IT[g].n;
+  if(g=="house"){const h=houseGeo(x,y),doorX=rot&1?h.x0+h.w-1:h.x0+(h.w>>1),doorY=rot&1?h.y0+(h.h>>1):h.y0+h.h-1,stepX=rot&1?1:0,stepY=rot&1?0:1;
+   for(let n=1;n<=4;n++){const px=doorX+stepX*n,py=doorY+stepY*n;if(!wr(px,py)||!land(T[li(px,py)])||B[li(px,py)]||cnt(a,"wood")<2)break;take(a,"wood",2);add(a,"floor",1);if(!put(a,"floor",px,py))break}
+   const fence=[[h.x0-2,h.y0-2],[h.x0+h.w+1,h.y0-2],[h.x0-2,h.y0+h.h+1],[h.x0+h.w+1,h.y0+h.h+1]];for(const [fx,fy] of fence){if(canPut("wall",fx,fy)&&cnt(a,"wood")>=3){take(a,"wood",3);add(a,"wall",1);put(a,"wall",fx,fy)}}
+  }return
+ }
+}
 function shelter(a){if(a.shT>time)return a.shS;a.shT=time+20;let b=nearestStr(a,[22]);if(b&&Math.hypot(b.x-a.base.x,b.y-a.base.y)>45)b=null;if(!b){for(let dy=-12;dy<=12&&!b;dy++)for(let dx=-12;dx<=12&&!b;dx++){const x=(a.base.x|0)+dx,y=(a.base.y|0)+dy;if(wr(x,y)&&B[li(x,y)]==1&&Rf[li(x,y)])b={x,y}}}if(!b){b=nearestStr(a,[10]);if(b&&Math.hypot(b.x-a.base.x,b.y-a.base.y)>45)b=null}a.shS=b;return b}
 function bestFood(a){let j=-1,bf=0;for(let i=0;i<a.inv.length;i++){const s=a.inv[i];if(s&&IT[s.i].f>bf){bf=IT[s.i].f;j=i}}return j}
 function threat(a){if(ageOf(a)<12)return;let b=null,sw=wdmg(a),bd=sw>5?40:12;for(const o of nearby(a.x,a.y,bd)){if(o===a||!hostile(a,o)&&!avenge(a,o))continue;const d=Math.hypot(o.x-a.x,o.y-a.y);if(d<bd){bd=d;b=o}}if(!b)return;
@@ -975,7 +982,7 @@ case"give":if(lead){const o=civs[n],L=actors[o.lead];let g=0;for(const r of["woo
 case"terr":if(lead){const o=civs[n],cl=claims.filter(x=>x.civ==n)[0];if(cl&&aiAccept("territory",c,o))transferClaim(cl,P.civ,"ceded under pressure");else{annoy(P.civ,n,-15);tip(o.n+" refuses to cede land")}}break;
 case"law":if(c)c.law[v]=!c.law[v];break;case"lead":if(lead){c.lead=n;ev("leader",`${fname(P)} appointed ${fname(actors[n])} as leader of ${c.n}`,{who:[n],civ:c.id,imp:true,n:true})}break;
 case"coun":if(c){if(c.coun.includes(n))c.coun=c.coun.filter(g=>g!=n);else if(c.coun.length<3)c.coun.push(n)}break;
-case"mk":UIS.mk=v;break;case"deadtog":UIS.dead^=1;break;case"aitog":UIS.playersOnly^=1;break;case"mpplayer":tmSelectedPlayer=v;break;case"mpinvite":tmSendCivInvite(v);break;case"travelrequest":tmSendTravelRequest(v);break;case"travelaccept":tmRespondTravel(v,true);break;case"traveldecline":tmRespondTravel(v,false);break;case"civaccept":tmRespondCiv(v,true);break;case"civdecline":tmRespondCiv(v,false);break;case"evf":UIS.evf=v;break;case"command":if(tmPrivateRoom&&tmIsOwner)tmSendCommand(v+(w?":"+w:""));else tip("commands are only available to the private server owner");break;case"cmdclose":togg("cmd");break;
+case"mk":UIS.mk=v;break;case"deadtog":UIS.dead^=1;break;case"aitog":UIS.playersOnly^=1;break;case"mpplayer":tmSelectedPlayer=v;break;case"mpinvite":tmSendCivInvite(v);break;case"travelrequest":tmSendTravelRequest(v);break;case"travelaccept":tmRespondTravel(v,true);break;case"traveldecline":tmRespondTravel(v,false);break;case"civaccept":tmRespondCiv(v,true);break;case"civdecline":tmRespondCiv(v,false);break;case"evf":UIS.evf=v;break;case"command":if(tmPrivateRoom&&tmIsOwner)tmSendCommand(v.replace(/~/g,":"));else tip("commands are only available to the private server owner");break;case"cmdclose":togg("cmd");break;
 case"newworld":{const s=($("sd")?$("sd").value:"").trim();closeAll();$("end").style.display="none";newGame(s);}break;
 case"loadauto":$("end").style.display="none";loadSlot("auto");break;case"save":saveSlot(v,true);break;case"load":loadSlot(v);break;
 case"key":UIS.rb=v;tip("press the new key for "+KBN[v]);break;case"keyreset":KB=Object.assign({},KBD);saveSet();break;
@@ -1157,7 +1164,7 @@ function tmRunCommand(id,fromServer){
 function tmBuildPreset(type){
  const layouts={starter:["house","campfire","workbench","chest"],farm:["farm","farm","farm","chest"],watchtower:["castlewall","castlewall","castlewall","castlewall","gate"],market:["workbench","chest","campfire","chest"],workshop:["workbench","furnace","anvil","cookstation"],fort:["castlewall","castlewall","gate","catapult"],castle:["castlewall","castlewall","castlewall","castlewall","gate","siege_tower","catapult"],village:["house","house","campfire","workbench","farm","chest"],harbor:["dock","ship","chest"],camp:["campfire","bed","workbench","chest"]};
  const list=layouts[type]||layouts.starter;let placed=0;
- for(let i=0;i<list.length;i++){const id=list[i];if(!IT[id])continue;for(let r=2;r<22&&!placed;r++)for(let dy=-r;dy<=r&&!placed;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=(P.x|0)+dx+i*2,y=(P.y|0)+dy;if(canPut(id,x,y)){add(P,id,1);if(put(P,id,x,y)){placed++;break}}}}
+ for(let i=0;i<list.length;i++){const id=list[i];if(!IT[id])continue;let did=false;for(let r=2;r<22&&!did;r++)for(let dy=-r;dy<=r&&!did;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=(P.x|0)+dx+i*2,y=(P.y|0)+dy;if(canPut(id,x,y)){add(P,id,1);if(put(P,id,x,y)){placed++;did=true;break}}}}
  tip("built "+type+" preset ("+placed+" pieces)");
 }
 function tmSendCommand(id){if(!tmPrivateRoom||!tmIsOwner||!tmSocket?.connected){tip("only the connected private server owner can use commands");return}tmSocket.emit("owner-command",{commandId:id},r=>{if(!r?.ok)tip(r?.error||"command failed")})}
