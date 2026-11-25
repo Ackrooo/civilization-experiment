@@ -1082,7 +1082,7 @@ function dioTick(dt){
   else if(now-dioHitAt>550){dioHitAt=now;if(t===P){P.hp=Math.max(0,P.hp-15);P.hitT=time+1;if(P.hp<=0)die(P,"DIO");}else{t.hp=Math.max(0,(t.hp||100)-15);t.hitT=time+1;if(t.hp<=0){t.dead=1;t.deathT=time}}}
   return;
  }
- if(dioWasStopped&&now>=dioStopUntil){dioWasStopped=false;dioAudio("dioResumeAudio");if(G.m)G.m.gain.value=vol.m*.4;ambTick();setTimeout(()=>dioAudio("dioTheme"),100);tip("THE WORLD has ended.");}
+ if(dioWasStopped&&now>=dioStopUntil){dioWasStopped=false;dioAudio("dioResumeAudio");if(G.m)G.m.gain.value=vol.m*.4;ambTick();setTimeout(()=>dioAudio("dioTheme"),3250);tip("THE WORLD has ended.");}
  if(now>=dioNextStop&&!dioStopPending){dioStopPending=true;dioStopPendingUntil=now+2000;["dioTheme","dioResumeAudio","dioBarrageAudio"].forEach(k=>$(k)?.pause());dioAudio("dioStopAudio");tip("DIO: THE WORLD!");return;}
  const t=dioTarget(),dx=t.x-b.x,dy=t.y-b.y,d=Math.hypot(dx,dy)||1;b.fl=dx>=0?1:-1;b.attack-=dt;
  if(now>(b.teleportNext||0)&&d>5){const ang=Math.atan2(dy,dx)+Math.PI+(rr()-.5)*.8;b.x=clamp(t.x+Math.cos(ang)*2.5,3,WS-4);b.y=clamp(t.y+Math.sin(ang)*2.5,3,WS-4);b.teleportNext=now+6500;burst(1200,2,.18,.2);}
