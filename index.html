@@ -133,6 +133,7 @@ hr{border:0;border-top:1px solid var(--ln)}
   <button class="tm-btn secondary tm-back" data-tm="main">Back</button>
  </section>
 </div>
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 <script>
 
 const WS=640,N=WS*WS,DAY=120,SEAS=360,YEAR=1440,LY=60,$=id=>document.getElementById(id);
@@ -1082,20 +1083,63 @@ newGame();requestAnimationFrame(frame)}
 /* Main menu and save/character selection */
 let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[],tmGameMode="single";
 const TM_CHAR_KEY="civexp.multiplayer.characters.v1";
+const TM_SERVER_URL="https://civilization-experiment-server.onrender.com";
+let tmSocket=null,tmRoomCode="",tmRoomAction="",tmRoomReady=false,tmOnlinePlayers=[];
 function tmReadChars(){try{const v=JSON.parse(localStorage.getItem(TM_CHAR_KEY)||"[]");tmChars=Array.isArray(v)?v.slice(0,3):[]}catch(e){tmChars=[]}}
 function tmWriteChars(){try{localStorage.setItem(TM_CHAR_KEY,JSON.stringify(tmChars))}catch(e){}}
 function tmShow(id){document.querySelectorAll("#titleMenu .tm-panel").forEach(p=>p.classList.add("tm-hidden"));$("tm-"+id).classList.remove("tm-hidden")}
+function tmSetMultiplayer(){tmGameMode="multiplayer";gspd=1;$("spd").value="1";$("spd").disabled=true;$("pilotBtn").disabled=true}
+function tmSelectedName(){return tmChars[tmSelectedChar]?.name||"Player"}
+function tmConnect(){
+ return new Promise((resolve,reject)=>{
+  if(!window.io){reject(new Error("Socket.IO client failed to load. Refresh the page and try again."));return}
+  if(tmSocket?.connected){resolve(tmSocket);return}
+  if(tmSocket){tmSocket.disconnect();tmSocket=null}
+  const socket=window.io(TM_SERVER_URL,{transports:["websocket","polling"],timeout:15000});
+  tmSocket=socket;
+  socket.once("connect",()=>resolve(socket));
+  socket.once("connect_error",err=>reject(new Error("Could not connect to multiplayer server: "+err.message)));
+  socket.on("disconnect",reason=>{if(reason!=="io client disconnect")console.warn("Multiplayer disconnected:",reason)});
+  socket.on("room-players",players=>{tmOnlinePlayers=Array.isArray(players)?players:[]});
+  socket.on("player-joined",player=>{console.log("Player joined room:",player)});
+  socket.on("player-left",player=>{console.log("Player left room:",player)});
+  socket.on("player-updated",player=>{console.log("Player update:",player)});
+ });
+}
+function tmEnterRoom(){tmSetMultiplayer();$("titleMenu").classList.add("tm-hidden");tip("Connected to private room "+tmRoomCode+". Multiplayer connection is active; shared world simulation is the next step.")}
+function tmCreatePrivateRoom(){
+ tmSetMultiplayer();tmRoomAction="create";tmRoomReady=false;tmRoomCode="";
+ $("tm-code").value="";$("tm-code").style.display="none";tmShow("private-code");
+ $("tm-private-result").textContent="Connecting to multiplayer server...";
+ tmConnect().then(socket=>new Promise((resolve,reject)=>socket.emit("create-room",{name:tmSelectedName()},resolve)))
+ .then(result=>{if(!result?.ok)throw new Error(result?.error||"Room creation failed.");tmRoomCode=result.code;tmRoomReady=true;$("tm-private-result").textContent="Private room created. Share this invite code with your friend: "+tmRoomCode+". Press Continue to enter.";$("tm-code").style.display="none"})
+ .catch(err=>{$("tm-private-result").textContent=err.message;tmRoomReady=false});
+}
+function tmJoinPrivateRoom(){
+ tmSetMultiplayer();tmRoomAction="join";tmRoomReady=false;tmRoomCode="";
+ $("tm-code").value="";$("tm-code").style.display="block";tmShow("private-code");
+ $("tm-private-result").textContent="Enter the invite code your friend gave you.";
+}
+function tmSubmitPrivateCode(){
+ if(tmRoomAction==="create"){if(tmRoomReady)tmEnterRoom();return}
+ const code=$("tm-code").value.trim().toUpperCase();
+ if(!code){$("tm-private-result").textContent="Enter an invite code.";return}
+ tmSetMultiplayer();$("tm-private-result").textContent="Connecting...";
+ tmConnect().then(socket=>new Promise(resolve=>socket.emit("join-room",code,resolve)))
+ .then(result=>{if(!result?.ok)throw new Error(result?.error||"Could not join that room.");tmRoomCode=result.code;tmRoomReady=true;tmEnterRoom()})
+ .catch(err=>{$("tm-private-result").textContent=err.message;tmRoomReady=false});
+}
 function tmRefreshSaves(){const el=$("tm-save-list");el.innerHTML="";["slot1","slot2","slot3"].forEach((k,i)=>{const meta=SAVEMETA[k]||"Empty slot";const row=document.createElement("div");row.className="tm-slot";const info=document.createElement("div");info.innerHTML="<b>Save "+(i+1)+"</b><small>"+(meta==="Empty slot"?"No saved world":String(meta).replace(/[&<>"]/g,""))+"</small>";const btn=document.createElement("button");btn.className="tm-btn secondary";btn.textContent=meta==="Empty slot"?"Empty":"Load";btn.disabled=meta==="Empty slot";btn.onclick=async()=>{const raw=await IDB.get(k).catch(()=>null);if(!raw){tip("No save in "+k);return}await loadSlot(k);$("titleMenu").classList.add("tm-hidden")};row.append(info,btn);el.append(row)})}
 function tmRefreshChars(){tmReadChars();const el=$("tm-char-list");el.innerHTML="";for(let i=0;i<3;i++){const c=tmChars[i],row=document.createElement("div");row.className="tm-slot";const info=document.createElement("div");info.innerHTML=c?"<b>"+String(c.name).replace(/[&<>"]/g,"")+"</b><small>Character slot "+(i+1)+" · profile saved on this device</small>":"<b>Empty character slot "+(i+1)+"</b><small>No character created</small>";const btn=document.createElement("button");btn.className="tm-btn secondary";btn.textContent=c?"Select": "Create";btn.onclick=()=>{if(c){tmSelectedChar=i;tmShow("servers")}else{tmEditingChar=i;$("tm-char-name").value="";tmShow("char-editor")}};row.append(info,btn);el.append(row)}}
 function tmMenuInit(){tmReadChars();$("titleMenu").classList.remove("tm-hidden");tmShow("main");document.addEventListener("click",e=>{const b=e.target.closest("[data-tm]");if(!b)return;const a=b.dataset.tm;
 if(a==="main"||a==="play"||a==="single"||a==="multi"||a==="characters"||a==="servers"||a==="private"||a==="settings"||a==="credits"){if(a==="play")tmShow("play");else if(a==="single"){tmGameMode="single";tmRefreshSaves();tmShow("saves")}else if(a==="multi"){tmGameMode="multiplayer";tmRefreshChars();tmShow("characters")}else tmShow(a);return}
 if(a==="newworld"){tmGameMode="single";$("spd").disabled=false;$("pilotBtn").disabled=false;const seed=prompt("World seed (leave blank for a random world):","");newGame(seed||"");$("titleMenu").classList.add("tm-hidden");return}
-if(a==="createchar"){if(tmChars.length>=3){alert("All three character slots are occupied.");return}tmEditingChar=[0,1,2].find(i=>!tmChars[i]);$("tm-char-name").value="";tmShow("char-editor");return}
+if(a==="createchar"){if(tmChars.filter(Boolean).length>=3){alert("All three character slots are occupied.");return}tmEditingChar=[0,1,2].find(i=>!tmChars[i]);$("tm-char-name").value="";tmShow("char-editor");return}
 if(a==="savechar"){const name=$("tm-char-name").value.trim();if(!name){alert("Enter a character name.");return}tmChars[tmEditingChar]={name,color:$("tm-char-color").value,items:[],equipment:{},created:Date.now()};tmWriteChars();tmRefreshChars();tmShow("characters");return}
-if(a==="server1"||a==="server2"||a==="server3"){tmGameMode="multiplayer";gspd=1;$("spd").value="1";$("spd").disabled=true;$("pilotBtn").disabled=true;tmShow("servers");$("tm-private-result").textContent="";alert("Multiplayer servers are not connected yet. The online backend must be built before players can join shared worlds.");return}
-if(a==="createprivate"){tmGameMode="multiplayer";gspd=1;$("spd").value="1";$("spd").disabled=true;$("pilotBtn").disabled=true;tmShow("private-code");$("tm-private-result").textContent="Private server creation requires the multiplayer backend. No working invite code can be issued yet.";return}
-if(a==="joinprivate"){tmGameMode="multiplayer";gspd=1;$("spd").value="1";$("spd").disabled=true;$("pilotBtn").disabled=true;tmShow("private-code");$("tm-private-result").textContent="Enter your friend's invite code once the multiplayer backend is online.";return}
-if(a==="submitcode"){alert("Private server joining is not available until the multiplayer backend is connected.");return}
+if(a==="server1"||a==="server2"||a==="server3"){tmSetMultiplayer();alert("Public servers are not configured yet. Private invite-code rooms are available.");return}
+if(a==="createprivate"){tmCreatePrivateRoom();return}
+if(a==="joinprivate"){tmJoinPrivateRoom();return}
+if(a==="submitcode"){tmSubmitPrivateCode();return}
 if(a==="fullscreen"){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.();return}
 });
 $("tm-music").oninput=e=>{vol.m=+e.target.value/100;setVol();$("vm").value=e.target.value};
