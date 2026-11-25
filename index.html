@@ -1092,31 +1092,61 @@ function dioTick(dt){
 }
 function dioDraw(){
  if(!dioBoss||dioBoss.hp<=0)return;
- const b=dioBoss,stopped=performance.now()<dioStopUntil,pending=dioStopPending,x=(b.x-cam.x)*16*zoom+cw/2,y=(b.y-cam.y)*16*zoom+ch/2;
+ const b=dioBoss,stopped=performance.now()<dioStopUntil,pending=dioStopPending;
+ const x=(b.x-cam.x)*16*zoom+cw/2,y=(b.y-cam.y)*16*zoom+ch/2;
  ctx.save();ctx.scale(zoom,zoom);ctx.translate(x,y);
- // The World stands slightly behind DIO so both silhouettes stay readable.
- ctx.fillStyle="#0009";ctx.fillRect(-22,6,40,5);
- // Stand: broad purple/gold armored silhouette on DIO's left.
- ctx.fillStyle="#38204f";ctx.fillRect(-25,-17,13,7);ctx.fillRect(-28,-10,19,15);ctx.fillRect(-24,5,6,7);ctx.fillRect(-14,5,6,7);
- ctx.fillStyle="#d9bd62";ctx.fillRect(-24,-20,11,4);ctx.fillRect(-27,-13,5,7);ctx.fillRect(-11,-13,5,7);ctx.fillRect(-27,-5,4,7);ctx.fillRect(-10,-5,4,7);
- ctx.fillStyle="#e6d9a0";ctx.fillRect(-22,-15,8,3);ctx.fillRect(-21,-7,9,3);ctx.fillStyle="#6b3d91";ctx.fillRect(-23,-3,13,7);
- // DIO's long blond hair, headband, face and green/gold outfit.
- ctx.fillStyle="#d8ad35";ctx.fillRect(-5,-23,13,5);ctx.fillRect(-7,-19,4,8);ctx.fillRect(7,-19,4,8);ctx.fillRect(-5,-17,13,3);
- ctx.fillStyle="#efc99c";ctx.fillRect(-4,-17,10,9);ctx.fillStyle="#a52b25";ctx.fillRect(-3,-12,8,2);ctx.fillStyle="#24202a";ctx.fillRect(2,-14,2,2);
- ctx.fillStyle="#d6b12f";ctx.fillRect(-7,-8,16,3);ctx.fillStyle="#28644d";ctx.fillRect(-8,-5,18,11);
- ctx.fillStyle="#d8b34a";ctx.fillRect(-10,-5,3,10);ctx.fillRect(9,-5,3,10);ctx.fillRect(-6,5,5,7);ctx.fillRect(3,5,5,7);
- ctx.fillStyle="#eee09a";ctx.fillRect(-7,-2,16,3);ctx.fillRect(-2,-1,5,5);ctx.fillStyle="#28202a";ctx.fillRect(-6,11,5,3);ctx.fillRect(4,11,5,3);
- // Stand aura / timestop shimmer.
- if(stopped||pending){ctx.globalAlpha=stopped?.85:.35;ctx.fillStyle="#73d9ed";for(let i=0;i<9;i++){const a=i*.698+dioAnim*2.5,rrad=23+(i%3)*5;ctx.fillRect(Math.cos(a)*rrad,Math.sin(a)*rrad-5,2,5)}ctx.globalAlpha=1;}
- if(performance.now()<(b.barrageUntil||0)){ctx.fillStyle="#f5df76";for(let k=0;k<5;k++){ctx.fillRect((b.fl>0?12:-18)+k*2,-9+(k%2)*7,7,5);ctx.fillRect((b.fl>0?12:-18)+k*2,2+(k%2)*5,7,5)}}
+ ctx.fillStyle="#0009";ctx.fillRect(-43,17,62,6);
+ // THE WORLD: muscular gold armor, segmented shoulder tubing and angular helmet.
+ ctx.fillStyle="#c99b35";ctx.fillRect(-43,3,9,14);ctx.fillRect(-29,3,9,14);
+ ctx.fillStyle="#e6c45c";ctx.fillRect(-44,10,7,8);ctx.fillRect(-30,10,7,8);
+ ctx.fillStyle="#8b6428";ctx.fillRect(-47,16,12,4);ctx.fillRect(-33,16,12,4);
+ ctx.fillStyle="#d8b34e";ctx.fillRect(-44,-2,10,9);ctx.fillRect(-30,-2,10,9);
+ ctx.fillStyle="#b88a2e";ctx.fillRect(-46,-20,29,22);
+ ctx.fillStyle="#e0bd59";ctx.fillRect(-44,-21,25,18);
+ ctx.fillStyle="#c79b3e";ctx.fillRect(-42,-11,21,12);
+ ctx.fillStyle="#f0d77b";ctx.fillRect(-40,-9,6,5);ctx.fillRect(-31,-9,6,5);ctx.fillRect(-40,-3,6,5);ctx.fillRect(-31,-3,6,5);
+ ctx.fillStyle="#d9bd72";ctx.fillRect(-48,-24,8,7);ctx.fillRect(-40,-27,17,7);ctx.fillRect(-24,-24,8,7);
+ ctx.fillStyle="#f0d99a";ctx.fillRect(-46,-24,5,3);ctx.fillRect(-38,-27,5,3);ctx.fillRect(-30,-27,5,3);ctx.fillRect(-25,-24,5,3);
+ ctx.fillStyle="#bd913c";ctx.fillRect(-49,-17,7,14);ctx.fillRect(-23,-17,7,14);
+ ctx.fillStyle="#e7c45e";ctx.fillRect(-50,-14,6,8);ctx.fillRect(-22,-14,6,8);
+ ctx.fillStyle="#7d9b91";ctx.fillRect(-51,-5,6,10);ctx.fillRect(-21,-5,6,10);
+ ctx.fillStyle="#d9b75b";ctx.fillRect(-53,3,9,7);ctx.fillRect(-23,3,9,7);
+ ctx.fillStyle="#f0d88c";ctx.fillRect(-52,4,4,3);ctx.fillRect(-22,4,4,3);
+ ctx.fillStyle="#d9b34b";ctx.fillRect(-40,-37,17,12);ctx.fillRect(-43,-33,4,8);ctx.fillRect(-24,-33,4,8);
+ ctx.fillStyle="#f1d36c";ctx.fillRect(-38,-38,12,4);ctx.fillRect(-41,-34,3,5);
+ ctx.fillStyle="#526f68";ctx.fillRect(-38,-28,13,7);
+ ctx.fillStyle="#1f3836";ctx.fillRect(-37,-26,5,2);ctx.fillRect(-30,-26,5,2);
+ ctx.fillStyle="#d8b75d";ctx.fillRect(-35,-21,9,3);
+ ctx.fillStyle="#668c43";ctx.fillRect(-42,-15,4,3);ctx.fillRect(-25,-15,4,3);ctx.fillRect(-37,7,4,3);ctx.fillRect(-29,7,4,3);
+ // DIO: swept blond hair, sharp face, black fitted shirt and bright yellow outfit.
+ ctx.fillStyle="#d6ad37";ctx.fillRect(7,7,8,12);ctx.fillRect(19,7,8,12);
+ ctx.fillStyle="#f0c84f";ctx.fillRect(6,13,9,7);ctx.fillRect(19,13,9,7);
+ ctx.fillStyle="#b58a2e";ctx.fillRect(5,18,12,4);ctx.fillRect(18,18,12,4);
+ ctx.fillStyle="#e5bd43";ctx.fillRect(6,2,22,9);
+ ctx.fillStyle="#2f5c3c";ctx.fillRect(7,1,20,3);ctx.fillStyle="#a7bd58";ctx.fillRect(15,1,5,4);
+ ctx.fillStyle="#171a20";ctx.fillRect(8,-17,19,21);ctx.fillStyle="#33313a";ctx.fillRect(11,-16,13,16);
+ ctx.fillStyle="#d9a92f";ctx.fillRect(3,-19,8,18);ctx.fillRect(24,-19,8,18);
+ ctx.fillStyle="#f2ca50";ctx.fillRect(1,-20,9,10);ctx.fillRect(25,-20,9,10);
+ ctx.fillStyle="#e6b637";ctx.fillRect(4,-3,7,11);ctx.fillRect(24,-3,7,11);
+ ctx.fillStyle="#f5d36a";ctx.fillRect(4,-18,4,12);ctx.fillRect(28,-18,4,12);
+ ctx.fillStyle="#e7bd49";ctx.fillRect(0,-15,5,13);ctx.fillRect(31,-15,5,13);
+ ctx.fillStyle="#f2ce61";ctx.fillRect(-1,-13,5,7);ctx.fillRect(32,-13,5,7);
+ ctx.fillStyle="#e8c59a";ctx.fillRect(-1,-3,5,4);ctx.fillRect(32,-3,5,4);
+ ctx.fillStyle="#c39a43";ctx.fillRect(0,-5,5,2);ctx.fillRect(32,-5,5,2);
+ ctx.fillStyle="#d9a65f";ctx.fillRect(14,-22,8,6);
+ ctx.fillStyle="#e7b77b";ctx.fillRect(12,-29,12,9);
+ ctx.fillStyle="#c78f53";ctx.fillRect(12,-24,12,3);
+ ctx.fillStyle="#d4a52f";ctx.fillRect(10,-34,16,6);ctx.fillRect(8,-32,4,5);ctx.fillRect(24,-33,5,6);
+ ctx.fillStyle="#f0cf59";ctx.fillRect(12,-36,11,4);ctx.fillRect(9,-34,5,4);ctx.fillRect(23,-34,5,4);
+ ctx.fillStyle="#9b603e";ctx.fillRect(14,-26,3,2);ctx.fillRect(21,-26,3,2);
+ ctx.fillStyle="#2c2425";ctx.fillRect(15,-25,2,1);ctx.fillRect(22,-25,2,1);
+ ctx.fillStyle="#557b3e";ctx.fillRect(13,0,9,4);ctx.fillRect(15,3,5,2);
+ ctx.fillStyle="#d7ad42";ctx.fillRect(16,0,4,3);
+ if(stopped||pending){ctx.globalAlpha=stopped?.85:.35;ctx.fillStyle="#73d9ed";for(let i=0;i<12;i++){const a=i*.524+dioAnim*2.5,rrad=45+(i%3)*5;ctx.fillRect(Math.cos(a)*rrad,Math.sin(a)*rrad-5,2,6)}ctx.globalAlpha=1;}
+ if(performance.now()<(b.barrageUntil||0)){ctx.fillStyle="#f5df76";for(let k=0;k<6;k++){ctx.fillRect((b.fl>0?34:-55)+k*3,-13+(k%2)*8,9,6);ctx.fillRect((b.fl>0?34:-55)+k*3,1+(k%2)*5,9,6);}}
  ctx.restore();
- if(stopped){
-  ctx.save();ctx.setTransform(D,0,0,D,0,0);ctx.fillStyle="rgba(12,65,105,.25)";ctx.fillRect(0,0,cw,ch);
-  const g=ctx.createRadialGradient(cw/2,ch/2,Math.min(cw,ch)*.12,cw/2,ch/2,Math.max(cw,ch)*.72);g.addColorStop(0,"rgba(115,220,255,.02)");g.addColorStop(1,"rgba(0,12,45,.62)");ctx.fillStyle=g;ctx.fillRect(0,0,cw,ch);
-  ctx.strokeStyle="rgba(130,225,255,.34)";ctx.lineWidth=2;for(let i=0;i<18;i++){const a=i*Math.PI/9+dioAnim*.08,r=Math.max(cw,ch)*.7;ctx.beginPath();ctx.moveTo(cw/2+Math.cos(a)*35,ch/2+Math.sin(a)*35);ctx.lineTo(cw/2+Math.cos(a)*r,ch/2+Math.sin(a)*r);ctx.stroke();}
-  ctx.fillStyle="rgba(190,240,255,.9)";ctx.font="bold 18px Courier New";ctx.textAlign="center";ctx.fillText("THE WORLD",cw/2,Math.max(34,ch*.16));ctx.font="12px Courier New";ctx.fillText("TIME HAS STOPPED",cw/2,Math.max(52,ch*.16+19));ctx.restore();
- }
- const bar=$("dioBossBar"),hp=$("dioBossHp"),status=$("dioBossStatus");if(bar)bar.style.display="block";if(hp)hp.style.width=(100*b.hp/b.maxHp)+"%";if(status)status.textContent=stopped?"TIME STOPPED":pending?"TIME STOP INCOMING": "TIME STOP COOLDOWN "+Math.max(0,Math.ceil((dioNextStop-performance.now())/1000))+"s";
+ if(stopped){ctx.save();ctx.setTransform(D,0,0,D,0,0);ctx.fillStyle="rgba(12,65,105,.25)";ctx.fillRect(0,0,cw,ch);const g=ctx.createRadialGradient(cw/2,ch/2,Math.min(cw,ch)*.12,cw/2,ch/2,Math.max(cw,ch)*.72);g.addColorStop(0,"rgba(115,220,255,.02)");g.addColorStop(1,"rgba(0,12,45,.62)");ctx.fillStyle=g;ctx.fillRect(0,0,cw,ch);ctx.strokeStyle="rgba(130,225,255,.34)";ctx.lineWidth=2;for(let i=0;i<18;i++){const a=i*Math.PI/9+dioAnim*.08,r=Math.max(cw,ch)*.7;ctx.beginPath();ctx.moveTo(cw/2+Math.cos(a)*35,ch/2+Math.sin(a)*35);ctx.lineTo(cw/2+Math.cos(a)*r,ch/2+Math.sin(a)*r);ctx.stroke();}ctx.fillStyle="rgba(190,240,255,.9)";ctx.font="bold 18px Courier New";ctx.textAlign="center";ctx.fillText("THE WORLD",cw/2,Math.max(34,ch*.16));ctx.font="12px Courier New";ctx.fillText("TIME HAS STOPPED",cw/2,Math.max(52,ch*.16+19));ctx.restore();}
+ const bar=$("dioBossBar"),hp=$("dioBossHp"),status=$("dioBossStatus");if(bar)bar.style.display="block";if(hp)hp.style.width=(100*b.hp/b.maxHp)+"%";if(status)status.textContent=stopped?"TIME STOPPED":pending?"TIME STOP INCOMING":"TIME STOP COOLDOWN "+Math.max(0,Math.ceil((dioNextStop-performance.now())/1000))+"s";
 }
 function frame(now){const dt=Math.min(.05,(now-last)/1e3);last=now;if(!paused&&P&&!P.dead){const n=P.sl?6:Math.max(1,Math.round(gspd)),sd=dt*(gspd<1?gspd:1);for(let i=0;i<n;i++)sim(sd)}
 if(UIS.track!=null&&actors[UIS.track]&&!actors[UIS.track].dead){const t=actors[UIS.track];cam.x+=(t.x-cam.x)*Math.min(1,dt*6);cam.y+=(t.y-cam.y)*Math.min(1,dt*6)}else{cam.x+=(P.x-cam.x)*Math.min(1,dt*8);cam.y+=(P.y-cam.y)*Math.min(1,dt*8)}
