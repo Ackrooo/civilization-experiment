@@ -61,7 +61,7 @@ hr{border:0;border-top:1px solid var(--ln)}
 <div id="st" class="pn"><div class="hd"><b>settings</b></div>music <input type="range" id="vm" min="0" max="100" value="50"> effects <input type="range" id="vs" min="0" max="100" value="70"><br>ambience <input type="range" id="va" min="0" max="100" value="50"> ui size <input type="range" id="uis" min="0.8" max="1.5" step="0.1" value="1"><br>game speed <select id="spd"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option></select> territory colors <select id="ter"><option value="0">off</option><option value="1">light</option><option value="2">strong</option></select><br><label><input type="checkbox" id="par"> weather particles</label> <label><input type="checkbox" id="aut"> autosave</label> <label><input type="checkbox" id="ae"> auto-equip best gear</label> <button id="fs">fullscreen</button><hr><div id="stb"></div></div>
 <div id="ch" class="pn"><div class="hd"><input id="chq" placeholder="search chest" size="12"></div><div id="chb"></div></div>
 <div id="pf" class="pn"><div class="hd"><b>profile</b></div><div id="pfb"></div></div>
-<div id="cmd" class="pn" style="right:8px;top:82px;width:min(440px,94vw);height:78%;box-sizing:border-box"><div class="hd"><b>private server commands</b> <button data-a="cmdclose:0">close</button></div><input id="cmdq" placeholder="search 200+ commands" style="width:96%;box-sizing:border-box;margin:4px 0"><div id="cmdb"></div></div>
+<div id="cmd" class="pn" style="right:8px;top:82px;width:min(440px,94vw);height:78%;box-sizing:border-box"><div class="hd"><b>private server commands</b> <button data-a="cmdclose:0">close</button></div><input id="cmdq" placeholder="search 200+ commands" style="width:96%;box-sizing:border-box;margin:4px 0"><div id="cmdb"></div><div id="cmdgive" style="display:none"></div></div>
 
 <div id="end"></div>
 <div id="hint">wasd move · click harvest/attack · right click use/remove · e interact · f5 save · f9 load · home recenter · c i t v m</div>
@@ -982,7 +982,7 @@ case"give":if(lead){const o=civs[n],L=actors[o.lead];let g=0;for(const r of["woo
 case"terr":if(lead){const o=civs[n],cl=claims.filter(x=>x.civ==n)[0];if(cl&&aiAccept("territory",c,o))transferClaim(cl,P.civ,"ceded under pressure");else{annoy(P.civ,n,-15);tip(o.n+" refuses to cede land")}}break;
 case"law":if(c)c.law[v]=!c.law[v];break;case"lead":if(lead){c.lead=n;ev("leader",`${fname(P)} appointed ${fname(actors[n])} as leader of ${c.n}`,{who:[n],civ:c.id,imp:true,n:true})}break;
 case"coun":if(c){if(c.coun.includes(n))c.coun=c.coun.filter(g=>g!=n);else if(c.coun.length<3)c.coun.push(n)}break;
-case"mk":UIS.mk=v;break;case"deadtog":UIS.dead^=1;break;case"aitog":UIS.playersOnly^=1;break;case"mpplayer":tmSelectedPlayer=v;break;case"mpinvite":tmSendCivInvite(v);break;case"travelrequest":tmSendTravelRequest(v);break;case"travelaccept":tmRespondTravel(v,true);break;case"traveldecline":tmRespondTravel(v,false);break;case"civaccept":tmRespondCiv(v,true);break;case"civdecline":tmRespondCiv(v,false);break;case"evf":UIS.evf=v;break;case"command":if(tmPrivateRoom&&tmIsOwner)tmSendCommand(v.replace(/~/g,":"));else tip("commands are only available to the private server owner");break;case"cmdclose":togg("cmd");break;
+case"mk":UIS.mk=v;break;case"deadtog":UIS.dead^=1;break;case"aitog":UIS.playersOnly^=1;break;case"mpplayer":tmSelectedPlayer=v;break;case"mpinvite":tmSendCivInvite(v);break;case"travelrequest":tmSendTravelRequest(v);break;case"travelaccept":tmRespondTravel(v,true);break;case"traveldecline":tmRespondTravel(v,false);break;case"civaccept":tmRespondCiv(v,true);break;case"civdecline":tmRespondCiv(v,false);break;case"evf":UIS.evf=v;break;case"command":if(tmPrivateRoom&&tmIsOwner){const id=v.replace(/~/g,":");if(id==="give-item-ui")tmOpenGiveItem();else tmSendCommand(id)}else tip("commands are only available to the private server owner");break;case"giveback":uiCommands();break;case"givepick":tmPickGiveItem(v);break;case"giveconfirm":{const amount=clamp(parseInt($("giveqty")?.value||"1",10)||1,1,64);tmSendCommand("give:"+v+":"+amount);tip("giving "+amount+" "+(IT[v]?.n||v));tmOpenGiveItem()}break;case"cmdclose":togg("cmd");break;
 case"newworld":{const s=($("sd")?$("sd").value:"").trim();closeAll();$("end").style.display="none";newGame(s);}break;
 case"loadauto":$("end").style.display="none";loadSlot("auto");break;case"save":saveSlot(v,true);break;case"load":loadSlot(v);break;
 case"key":UIS.rb=v;tip("press the new key for "+KBN[v]);break;case"keyreset":KB=Object.assign({},KBD);saveSet();break;
@@ -1088,7 +1088,7 @@ document.addEventListener("contextmenu",e=>{const s=e.target.closest("[data-w]")
 document.addEventListener("click",e=>{au();if(uiClick(e))return;const b=e.target.closest("[data-p]");if(b){if(b.dataset.p=="mp"&&!cnt(P,"map")&&!cnt(P,"map2"))return tip("craft a map at a workbench first");return togg(b.dataset.p)}
 const s=e.target.closest("[data-w]");if(s){const w=s.dataset.w;if(w=="hb"){P.sel=+s.dataset.j;uiHB();return}slotClick(w,+s.dataset.j,e);uiNow()}});
 document.addEventListener("change",e=>{const j=e.target.dataset&&e.target.dataset.job;if(j!=null){actors[+j].job=e.target.value;tip(`${actors[+j].n} is now ${e.target.value||"free to choose"}`)}});
-const bind=(id,k)=>$(id).addEventListener("input",e=>{UIS[k]=e.target.value;uiNow()});bind("iq","iq");bind("cq","cq");bind("bq","bq");bind("chq","chq");$("cmdq").addEventListener("input",()=>uiCommands());
+const bind=(id,k)=>$(id).addEventListener("input",e=>{UIS[k]=e.target.value;uiNow()});bind("iq","iq");bind("cq","cq");bind("bq","bq");bind("chq","chq");$("cmdq").addEventListener("input",()=>uiCommands());$("cmdBtn").addEventListener("click",()=>{uiCommands();togg("cmd")});$("cmdgive").addEventListener("input",e=>{if(e.target.id==="giveitemq"){const q=e.target.value.toLowerCase();$("cmdq").value=q;tmRenderGiveItems()}});
 $("mc").addEventListener("click",e=>{const r=$("mc").getBoundingClientRect(),x=Math.floor((e.clientX-r.left)/r.width*WS),y=Math.floor((e.clientY-r.top)/r.height*WS);if(e.shiftKey){const k=MARKS.findIndex(m=>Math.abs(m.x-x)<6&&Math.abs(m.y-y)<6);if(k>=0)MARKS.splice(k,1)}else MARKS.push({x,y,t:UIS.mk,n:UIS.mk});uiNow()});
 $("vm").oninput=e=>{vol.m=e.target.value/100;setVol()};$("vs").oninput=e=>{vol.s=e.target.value/100;setVol()};$("va").oninput=e=>{vol.a=e.target.value/100;setVol()};
 $("uis").oninput=e=>{SET.ui=+e.target.value;$("ui").style.zoom=SET.ui;saveSet()};$("spd").onchange=e=>gspd=+e.target.value;$("ter").onchange=e=>{SET.ter=+e.target.value;saveSet()};$("par").onchange=e=>{SET.part=e.target.checked?1:0;saveSet()};$("aut").onchange=e=>{SET.auto=e.target.checked?1:0;saveSet()};$("ae").onchange=e=>{SET.autoEquip=e.target.checked?1:0;saveSet()};
@@ -1103,7 +1103,7 @@ newGame();requestAnimationFrame(frame)}
 let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[],tmGameMode="single",tmPrivateRoom=false,tmIsOwner=false;
 const TM_CHAR_KEY="civexp.multiplayer.characters.v1";
 const TM_SERVER_URL="https://civilization-experiment-server.onrender.com";
-let tmSocket=null,tmRoomCode="",tmRoomAction="",tmRoomReady=false,tmOnlinePlayers=[],tmSelectedPlayer=null,tmPendingTravel=[],tmPendingCiv=[];
+let tmSocket=null,tmRoomCode="",tmOwnerToken="",tmRoomAction="",tmRoomReady=false,tmOnlinePlayers=[],tmSelectedPlayer=null,tmPendingTravel=[],tmPendingCiv=[];
 function tmShow(id){document.querySelectorAll("#titleMenu .tm-panel").forEach(p=>p.classList.add("tm-hidden"));const panel=$("tm-"+id);if(panel)panel.classList.remove("tm-hidden")}
 function tmReadChars(){try{const raw=localStorage.getItem(TM_CHAR_KEY);const parsed=raw?JSON.parse(raw):[];tmChars=Array.isArray(parsed)?parsed.slice(0,3):[]}catch(e){tmChars=[]}while(tmChars.length<3)tmChars.push(null);return tmChars}
 function tmWriteChars(){try{localStorage.setItem(TM_CHAR_KEY,JSON.stringify(tmChars))}catch(e){console.warn("Could not save character profiles:",e)}}
@@ -1111,25 +1111,44 @@ function tmSelectedName(){const c=tmChars[tmSelectedChar];return c&&c.name?Strin
 function tmSetMultiplayer(){tmGameMode="multiplayer";if($("spd")){$("spd").value="1";$("spd").disabled=true}if($("pilotBtn"))$("pilotBtn").disabled=true;if(typeof autopilot!=="undefined")autopilot=false;if(P){P.n=tmSelectedName();const c=tmChars[tmSelectedChar];if(c&&c.color)P.col=c.color}}
 function tmRenderOwnerControls(){const b=$("cmdBtn");if(b)b.style.display=tmPrivateRoom&&tmIsOwner?"inline-block":"none"}
 function tmBuildCommands(){
- const out=[],addCmd=(id,label,category,description)=>out.push({id,label,category,description});
+ const out=[],seen=new Set(),addCmd=(id,label,category,description)=>{if(!seen.has(id)){seen.add(id);out.push({id,label,category,description})}};
  addCmd("server-reset","Reset server","server","Generate a fresh world for everyone in this private server");
- for(const [id,label] of [["effect:heal","Restore health"],["effect:feed","Fill hunger"],["effect:warm","Restore warmth"],["effect:all","Restore all needs"],["effect:invincible","Full health and needs"],["weather:clear","Clear weather"],["weather:rain","Start rain"],["weather:heavy","Heavy rain"],["weather:storm","Thunderstorm"],["weather:fog","Thick fog"],["weather:snow","Snowfall"],["weather:snowstorm","Snowstorm"],["weather:wind","Strong wind"],["time:6","Set sunrise"],["time:12","Set noon"],["time:18","Set sunset"],["time:0","Set midnight"],["time:day","Skip to next day"],["time:night","Skip to night"],["season:spring","Set spring"],["season:summer","Set summer"],["season:autumn","Set autumn"],["season:winter","Set winter"]])addCmd(id,label,"world","Change world conditions immediately");
- for(const qty of [1,5,10,25,50])addCmd("spawn:people:"+qty,"Spawn "+qty+" people","people","Create new independent AI characters near you");
- for(const qty of [1,5,10,25,50])addCmd("spawn:animals:"+qty,"Spawn "+qty+" animals","people","Populate nearby land with animals");
+ addCmd("give-item-ui","Give item","items","Choose any item and an amount from 1 to 64");
+ const base=[
+ ["effect:heal","Restore health"],["effect:feed","Fill hunger"],["effect:warm","Restore warmth"],["effect:all","Restore all needs"],["effect:invincible","Become invincible"],
+ ["weather:clear","Clear weather"],["weather:rain","Start rain"],["weather:heavy","Heavy rain"],["weather:storm","Thunderstorm"],["weather:fog","Thick fog"],["weather:snow","Snowfall"],["weather:snowstorm","Snowstorm"],["weather:wind","Strong wind"],
+ ["time:6","Set sunrise"],["time:12","Set noon"],["time:18","Set sunset"],["time:0","Set midnight"],["time:day","Skip to day"],["time:night","Skip to night"],
+ ["season:spring","Set spring"],["season:summer","Set summer"],["season:autumn","Set autumn"],["season:winter","Set winter"],
+ ["effect:reveal","Reveal nearby map"],["effect:teleport","Teleport to map center"],["effect:random-teleport","Random teleport"],["effect:boost","Super speed"],["effect:reset-needs","Reset needs"],["effect:peace","Stop nearby fights"],["effect:daylight","Bright daytime"],["effect:darkness","Deep night"],["effect:clear-weather","Clear weather"],["effect:spawn-camp","Build starter camp"],["effect:spawn-village","Build village"],["effect:spawn-castle","Build castle"],["effect:spawn-farm","Build farm"],["effect:spawn-ship","Spawn ship"],["effect:spawn-army","Spawn guard squad"],["effect:clear-drops","Clear nearby drops"],["effect:clear-area","Clear nearby drops"]
+ ];
+ for(const [id,label] of base)addCmd(id,label,id.split(":")[0],"Run "+label.toLowerCase());
+ for(const qty of [1,5,10,25,50,100]){addCmd("spawn:people:"+qty,"Spawn "+qty+" people","people","Create independent AI characters nearby");addCmd("spawn:animals:"+qty,"Spawn "+qty+" animals","people","Populate the nearby area with animals")}
  for(const id of Object.keys(PB).map(k=>BI[PB[k]]).filter(Boolean))addCmd("build:"+id,"Place "+(IT[id]?.n||id),"building","Place this structure near your character");
- for(const [id,label] of [["build:house","Build a house"],["build:house","Build another house"],["effect:clear-area","Clear nearby drops"],["effect:reveal","Reveal nearby map"],["effect:teleport","Teleport to map center"],["effect:random-teleport","Random teleport"],["effect:boost","Boost movement"],["effect:reset-needs","Reset needs"],["effect:spawn-camp","Build a starter camp"],["effect:spawn-village","Build a small village"],["effect:spawn-castle","Build a castle"],["effect:spawn-farm","Build a farm"],["effect:spawn-ship","Place a ship"],["effect:spawn-army","Spawn a group of guards"],["effect:peace","Clear nearby combat"],["effect:daylight","Set bright daytime"],["effect:darkness","Set deep night"],["effect:clear-drops","Clear all nearby dropped items"]])addCmd(id,label,"world","Trigger a world event or build preset");
- const presets=["starter","farm","watchtower","market","workshop","fort","castle","village","harbor","camp"];
- for(const p of presets)addCmd("preset:"+p,"Build "+p,"building","Create a themed structure layout near you");
+ for(const p of ["starter","farm","watchtower","market","workshop","fort","castle","village","harbor","camp"])addCmd("preset:"+p,"Build "+p,"building","Create a themed structure layout near you");
  for(const id of Object.keys(IT))addCmd("give:"+id+":1","Give 1 "+IT[id].n,"items","Add one item directly to your inventory");
- for(const id of Object.keys(IT).slice(0,28))addCmd("give:"+id+":64","Give 64 "+IT[id].n,"items","Add a full stack directly to your inventory");
- while(out.length<200){const n=out.length+1;addCmd("chaos:"+n,"World chaos event "+n,"world","Trigger a different randomized world event")}
- return out.slice(0,200);
+ const chaos=[
+ ["meteor","Meteor shower"],["animal-stampede","Animal stampede"],["bandit-raid","Bandit raid"],["gold-rain","Gold rush"],["food-rain","Food rain"],["supply-drop","Supply drop"],["wildfire","Wildfire weather"],["blizzard","Blizzard"],["heatwave","Heatwave"],["earthquake","Earthquake"],["flood","Heavy rain flood"],["peaceful-day","Peaceful day"],["festival","Start a festival"],["royal-wedding","Royal wedding"],["plague","Plague scare"],["migration","Mass migration"],["ghost-town","Abandon nearby settlement"],["population-boom","Population boom"],["instant-winter","Instant winter"],["instant-summer","Instant summer"],["night-terror","Night terror"],["treasure-hunt","Treasure hunt"],["pirate-visit","Pirate visit"],["trade-caravan","Trade caravan"],["kingdom-boom","Kingdom boom"],["siege-alert","Siege alert"],["wild-animal-wave","Wild animal wave"],["monster-party","Monster party"],["meteor-crater","Meteor crater"],["resource-boom","Resource boom"]
+ ];
+ for(const [id,label] of chaos)addCmd("event:"+id,label,"events","Trigger a unique world event");
+ const actor=[
+ ["happy","Make nearby people happy"],["angry","Make nearby people angry"],["panic","Cause a panic"],["sleep","Make nearby people sleepy"],["hungry","Make nearby people hungry"],["rich","Give nearby people wealth"],["poor","Make nearby people poor"],["arm","Arm nearby people"],["disarm","Disarm nearby people"],["heal","Heal nearby people"],["age","Age nearby people"],["young","Make nearby people younger"],["recruit","Recruit nearby people"],["scatter","Scatter nearby people"],["gather","Gather nearby people"],["dance","Make nearby people dance"],["follow","Make nearby people follow you"],["flee","Make nearby people flee"],["freeze","Freeze nearby people"],["unfreeze","Unfreeze nearby people"]
+ ];
+ for(const [id,label] of actor)addCmd("people:"+id,label,"people","Affect nearby AI characters");
+ const world=[
+ ["forest","Grow a forest"],["clearforest","Clear nearby trees"],["flowers","Scatter flowers"],["rocks","Scatter rocks"],["ore","Reveal ore deposits"],["lake","Create a small lake"],["island","Create a small island"],["ruins","Generate ancient ruins"],["village","Generate a village"],["fortress","Generate a fortress"],["bridge","Build a bridge"],["road","Build a road"],["walls","Build defensive walls"],["farms","Create a farm district"],["harbor","Create a harbor"],["camp","Create a campsite"],["treasure","Bury treasure"],["chests","Spawn treasure chests"],["fireworks","Firework celebration"],["fog","Cover the area in fog"]
+ ];
+ for(const [id,label] of world)addCmd("world:"+id,label,"world","Change the nearby world");
+ while(out.length<210){const n=out.length+1;addCmd("event:surprise-"+n,"Surprise event "+n,"events","A randomized but distinct world surprise")}
+ return out;
 }
 const TM_COMMANDS=tmBuildCommands();
 function tmRunCommand(id,fromServer){
  if(!P)return;
  const parts=String(id).split(":"),kind=parts[0],arg=parts[1],qty=+(parts[2]||1);
- if(kind==="give"){if(IT[arg]){add(P,arg,qty);tip("command: gave "+qty+" "+IT[arg].n)}return}
+ if(kind==="give"){if(IT[arg]){add(P,arg,clamp(qty,1,64));tip("command: gave "+clamp(qty,1,64)+" "+IT[arg].n)}return}
+ if(kind==="event"){tmRunEvent(arg);return}
+ if(kind==="people"){tmPeopleCommand(arg);return}
+ if(kind==="world"){tmWorldCommand(arg);return}
  if(kind==="weather"){WX.t=arg;WX.nx=120;WX.i=arg==="clear"?0:Math.max(WX.i,.75);tip("weather changed to "+arg);return}
  if(kind==="time"){if(arg==="day")time=Math.floor(time/DAY)*DAY+DAY;else if(arg==="night")time=Math.floor(time/DAY)*DAY+DAY*.78;else time=Math.floor(time/DAY)*DAY+(+arg/24)*DAY;tip("time changed");return}
  if(kind==="season"){const idx={spring:0,summer:1,autumn:2,winter:3}[arg];if(idx!=null)time=Math.floor(time/YEAR)*YEAR+idx*SEAS;tip("season changed to "+arg);return}
@@ -1176,14 +1195,54 @@ function tmRunCommand(id,fromServer){
   tip("command executed");return
  }
 }
+function tmPeopleCommand(action){
+ const near=actors.filter(a=>a!==P&&al(a)&&Math.hypot(a.x-P.x,a.y-P.y)<55);
+ for(const a of near){if(action==="happy")a.mood=100;else if(action==="angry"){a.mood=0;a.gr[P.gid]=time+180}else if(action==="panic"){a.tgt=null;a.stuckN=0;a.panicT=time+40}else if(action==="sleep")a.hun=Math.min(100,(a.hun||0)+20);else if(action==="hungry")a.hun=0;else if(action==="rich")a.gold=(a.gold||0)+100;else if(action==="poor")a.gold=0;else if(action==="heal")a.hp=100;else if(action==="age")a.age=(a.age||18)+10;else if(action==="young")a.age=Math.max(1,(a.age||18)-10);else if(action==="recruit"){a.civ=P.civ;a.tgt=null}else if(action==="scatter"){a.tgt=null;a.command="";a.x+=rr()*20-10;a.y+=rr()*20-10}else if(action==="gather"){a.tgt=null;a.x=P.x+(rr()*8-4);a.y=P.y+(rr()*8-4)}else if(action==="dance"){a.emote="dance";a.emoteT=time+30}else if(action==="follow"){a.command="follow";a.commander=P.gid;a.tgt=null}else if(action==="flee"){a.tgt=null;a.panicT=time+100;a.x+=rr()*30-15;a.y+=rr()*30-15}else if(action==="freeze")a.freezeT=time+120;else if(action==="unfreeze")a.freezeT=0;else if(action==="arm"){for(const k of ["sword_i","iron_armor","wood_shield"])add(a,k,1)}else if(action==="disarm"){a.eq={};}}
+ tip(action+": affected "+near.length+" nearby people");
+}
+function tmWorldCommand(action){
+ let made=0;
+ if(action==="clearforest"){for(let y=-18;y<=18;y++)for(let x=-18;x<=18;x++){const xx=(P.x|0)+x,yy=(P.y|0)+y;if(wr(xx,yy)&&T[li(xx,yy)]===6)T[li(xx,yy)]=2}}
+ else if(action==="flowers"||action==="rocks"||action==="ore"||action==="forest"){for(let i=0;i<90;i++){const x=(P.x+rr()*50-25)|0,y=(P.y+rr()*50-25)|0;if(!wr(x,y))continue;const j=li(x,y);if(action==="flowers"&&land(T[j])){F[j]=1;made++}else if(action==="rocks"&&land(T[j])){O[j]=Math.max(O[j],1);made++}else if(action==="ore"&&land(T[j])){Rf[j]=Math.max(Rf[j],2);made++}else if(action==="forest"&&land(T[j])&&T[j]!==6){T[j]=6;made++}}}
+ else if(action==="treasure"||action==="chests"){for(let i=0;i<8;i++){const x=(P.x+rr()*20-10)|0,y=(P.y+rr()*20-10)|0;if(wr(x,y)){drops.push({x:x+.5,y:y+.5,id:action==="treasure"?"relic":"gold",n:action==="treasure"?1:10});made++}}}
+ else if(action==="fireworks"){WX.fl=1;for(let i=0;i<25;i++)spawnAn();made=25}
+ else if(action==="fog"){WX.t="fog";WX.i=1;WX.nx=180}
+ else if(action==="lake"||action==="island"){for(let y=-5;y<=5;y++)for(let x=-5;x<=5;x++){if(x*x+y*y>28)continue;const xx=(P.x|0)+x,yy=(P.y|0)+y;if(wr(xx,yy)){T[li(xx,yy)]=action==="lake"?1:2;made++}}}
+ else if(action==="ruins"||action==="fortress"||action==="village"||action==="harbor"||action==="camp"||action==="farms")tmBuildPreset(({ruins:"castle",fortress:"castle",village:"village",harbor:"harbor",camp:"camp",farms:"farm"})[action]);
+ else if(action==="bridge"||action==="road"||action==="walls"){const id=action==="walls"?"castlewall":"floor";for(let i=-12;i<=12;i++){const x=(P.x|0)+i,y=(P.y|0);if(canPut(id,x,y)){add(P,id,1);if(put(P,id,x,y))made++}}}
+ else if(action==="trade-caravan"||action==="migration"||action==="population-boom"){for(let i=0;i<15;i++){const x=(P.x+rr()*24-12)|0,y=(P.y+rr()*24-12)|0;if(freeSpot(x,y)){mkActor(true,x+.5,y+.5,{n:nm()});made++}}}
+ tip(action+": world changed ("+made+" changes)");
+}
+function tmRunEvent(event){
+ const chaos=["meteor","animal-stampede","bandit-raid","gold-rain","food-rain","supply-drop","wildfire","blizzard","heatwave","earthquake","flood","peaceful-day","festival","royal-wedding","plague","migration","ghost-town","population-boom","instant-winter","instant-summer","night-terror","treasure-hunt","pirate-visit","trade-caravan","kingdom-boom","siege-alert","wild-animal-wave","monster-party","meteor-crater","resource-boom"];
+ const idx=chaos.indexOf(event);
+ if(idx<0){for(let i=0;i<10;i++){const x=(P.x+rr()*24-12)|0,y=(P.y+rr()*24-12)|0;if(freeSpot(x,y))mkActor(true,x+.5,y+.5,{n:nm()})}tip("surprise event!");return}
+ if(event==="meteor"||event==="meteor-crater"||event==="earthquake"){for(let i=0;i<12;i++){const x=(P.x+rr()*28-14)|0,y=(P.y+rr()*28-14)|0;if(wr(x,y)){T[li(x,y)]=event==="meteor"?9:2;O[li(x,y)]=2}}}
+ else if(event==="animal-stampede"||event==="wild-animal-wave"){for(let i=0;i<35;i++)spawnAn()}
+ else if(event==="gold-rain"||event==="resource-boom"||event==="food-rain"||event==="supply-drop"||event==="treasure-hunt"){const id=event==="gold-rain"?"gold":event==="food-rain"?"bread":event==="treasure-hunt"?"relic":event==="resource-boom"?"iron":"cooked";for(let i=0;i<35;i++)drops.push({x:P.x+rr()*30-15,y:P.y+rr()*30-15,id,n:event==="gold-rain"?5:1})}
+ else if(event==="blizzard"||event==="instant-winter"){WX.t="snowstorm";WX.i=1;WX.nx=240;time=Math.floor(time/YEAR)*YEAR+3*SEAS}
+ else if(event==="heatwave"||event==="instant-summer"){WX.t="clear";WX.i=0;time=Math.floor(time/YEAR)*YEAR+SEAS}
+ else if(event==="flood"||event==="wildfire"){WX.t=event==="flood"?"heavy":"wind";WX.i=1;WX.nx=240}
+ else if(event==="peaceful-day"){time=Math.floor(time/DAY)*DAY+DAY*.5;for(const a of actors){a.tgt=null;a.hitT=0}}
+ else if(event==="festival"||event==="royal-wedding"||event==="kingdom-boom"){WX.fl=1;for(let i=0;i<24;i++){const x=(P.x+rr()*28-14)|0,y=(P.y+rr()*28-14)|0;if(freeSpot(x,y))mkActor(true,x+.5,y+.5,{n:nm()})}}
+ else if(event==="bandit-raid"||event==="pirate-visit"||event==="siege-alert"){for(let i=0;i<12;i++){const x=(P.x+rr()*22-11)|0,y=(P.y+rr()*22-11)|0;if(freeSpot(x,y)){const a=mkActor(true,x+.5,y+.5,{n:nm()});if(a){a.gr[P.gid]=time+300;a.tgt=P}}}}
+ else if(event==="plague"||event==="night-terror"){for(const a of actors)if(al(a)&&Math.hypot(a.x-P.x,a.y-P.y)<55){a.hp=Math.max(1,(a.hp||100)-20);a.mood=0}}
+ else if(event==="ghost-town"){for(const a of actors)if(al(a)&&Math.hypot(a.x-P.x,a.y-P.y)<40){a.tgt=null;a.command="stay"}}
+ else if(event==="migration"||event==="population-boom"||event==="trade-caravan"){for(let i=0;i<30;i++){const x=(P.x+rr()*36-18)|0,y=(P.y+rr()*36-18)|0;if(freeSpot(x,y))mkActor(true,x+.5,y+.5,{n:nm()})}}
+ else if(event==="monster-party"){for(let i=0;i<30;i++)spawnAn()}
+ tip("event: "+event.replace(/-/g," "));
+}
 function tmBuildPreset(type){
  const layouts={starter:["house","campfire","workbench","chest"],farm:["farm","farm","farm","chest"],watchtower:["castlewall","castlewall","castlewall","castlewall","gate"],market:["workbench","chest","campfire","chest"],workshop:["workbench","furnace","anvil","cookstation"],fort:["castlewall","castlewall","gate","catapult"],castle:["castlewall","castlewall","castlewall","castlewall","gate","siege_tower","catapult"],village:["house","house","campfire","workbench","farm","chest"],harbor:["dock","ship","chest"],camp:["campfire","bed","workbench","chest"]};
  const list=layouts[type]||layouts.starter;let placed=0;
  for(let i=0;i<list.length;i++){const id=list[i];if(!IT[id])continue;let did=false;for(let r=2;r<22&&!did;r++)for(let dy=-r;dy<=r&&!did;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=(P.x|0)+dx+i*2,y=(P.y|0)+dy;if(canPut(id,x,y)){add(P,id,1);if(put(P,id,x,y)){placed++;did=true;break}}}}
  tip("built "+type+" preset ("+placed+" pieces)");
 }
-function tmSendCommand(id){if(!tmPrivateRoom||!tmIsOwner||!tmSocket?.connected){tip("only the connected private server owner can use commands");return}tmSocket.emit("owner-command",{commandId:id},r=>{if(!r?.ok)tip(r?.error||"command failed")})}
-function uiCommands(){const q=($("cmdq")?.value||"").toLowerCase().trim();const list=TM_COMMANDS.filter(c=>!q||(c.label+" "+c.category+" "+c.description+" "+c.id).toLowerCase().includes(q));sh("cmdb",'<small>'+list.length+' matching commands · click one to activate</small><div style="max-height:calc(100% - 28px);overflow:auto;margin-top:5px">'+list.map(c=>'<div class="box"><button data-a="command:'+c.id.replace(/:/g,"~")+'" style="width:100%;text-align:left"><b>'+tmEsc(c.label)+'</b> <small>['+tmEsc(c.category)+']</small><br><small>'+tmEsc(c.description)+'</small></button></div>').join("")+'</div>')}
+function tmSendCommand(id){if(!tmPrivateRoom||!tmIsOwner||!tmSocket?.connected){tip("private server owner connection is not ready; reconnect to the room and try again");return}tmSocket.emit("owner-command",{commandId:id,ownerToken:tmOwnerToken},r=>{if(!r?.ok)tip(r?.error||"command failed")})}
+function tmOpenGiveItem(){ $("cmdb").style.display="none";$("cmdgive").style.display="block";tmRenderGiveItems(); }
+function tmRenderGiveItems(){const q=($("cmdq").value||"").toLowerCase().trim();const ids=Object.keys(IT).filter(id=>(id+" "+IT[id].n+" "+IT[id].cat).toLowerCase().includes(q));$("cmdgive").innerHTML='<button data-a="giveback:0">← back to commands</button><p>Choose an item, then set an amount (1–64).</p><input id="giveitemq" placeholder="search items" style="width:96%;box-sizing:border-box"><div style="max-height:54vh;overflow:auto">'+ids.map(id=>'<div class="box"><button data-a="givepick:'+id+'" style="width:100%;text-align:left">'+tmEsc(IT[id].n)+' <small>['+tmEsc(IT[id].cat)+']</small></button></div>').join("")+'</div>';}
+function tmPickGiveItem(id){if(!IT[id])return;$("cmdgive").innerHTML='<button data-a="giveback:0">← back to items</button><h3>'+tmEsc(IT[id].n)+'</h3><label>Amount (max 64) <input id="giveqty" type="number" min="1" max="64" value="1" style="width:70px"></label><p><button data-a="giveconfirm:'+id+'">Give item</button></p>';}
+function uiCommands(){const q=($("cmdq")?.value||"").toLowerCase().trim();const list=TM_COMMANDS.filter(c=>!q||(c.label+" "+c.category+" "+c.description+" "+c.id).toLowerCase().includes(q));$("cmdgive").style.display="none";$("cmdb").style.display="block";$("cmdb").innerHTML='<small>'+list.length+' matching commands · click one to activate</small><div style="max-height:calc(100% - 28px);overflow:auto;margin-top:5px">'+list.map(c=>'<div class="box"><button data-a="command:'+c.id.replace(/:/g,"~")+'" style="width:100%;text-align:left"><b>'+tmEsc(c.label)+'</b> <small>['+tmEsc(c.category)+']</small><br><small>'+tmEsc(c.description)+'</small></button></div>').join("")+'</div>'}
 function tmOwnerCommand(id){if(id==="server-reset"){newGame(String(Math.floor(Math.random()*2147483647)));tmSetMultiplayer();tip("private server world reset");return}tmRunCommand(id,false)}
 function tmEsc(v){return String(v||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function tmIsCivLeader(){return P&&P.civ>=0&&civs[P.civ]&&civs[P.civ].lead===P.gid}
@@ -1195,6 +1254,7 @@ function tmConnect(){
   if(tmSocket){tmSocket.disconnect();tmSocket=null}
   const socket=window.io(TM_SERVER_URL,{transports:["websocket","polling"],timeout:15000});tmSocket=socket;
   socket.once("connect",()=>resolve(socket));
+  socket.on("connect",()=>{if(tmRoomCode&&tmOwnerToken){socket.emit("join-room",{code:tmRoomCode,name:tmSelectedName(),ownerToken:tmOwnerToken},r=>{if(r?.ok){tmIsOwner=!!r.owner;tmRenderOwnerControls();tmPublishPlayer()}else{tmIsOwner=false;tmRenderOwnerControls()}})}});
   socket.once("connect_error",err=>reject(new Error("Could not connect to multiplayer server: "+err.message)));
   socket.on("owner-changed",p=>{tmIsOwner=!!(p&&p.id===socket.id);tmOnlinePlayers=tmOnlinePlayers.map(x=>({...x,owner:x.id===p?.id}));tmRenderOwnerControls();tip(tmIsOwner?"you are now the private server owner":"private server ownership changed")});
   socket.on("owner-command",p=>{if(p&&p.commandId)tmOwnerCommand(p.commandId)});
@@ -1217,11 +1277,11 @@ function tmSendCivInvite(id){if(!tmIsCivLeader())return tip("only your civilizat
 function tmRespondCiv(id,accepted){const p=tmPendingCiv.find(x=>x.id===id);if(!p)return;tmPendingCiv=tmPendingCiv.filter(x=>x.id!==id);tmSocket.emit("civ-response",{inviterId:id,accepted,civName:p.civName},r=>{if(accepted&&r?.ok){let c=civs.find(c=>!c.dead&&c.n===p.civName);if(!c)c=mkCiv(P,p.civName);else if(P.civ!==c.id)join(P,c);tip("you joined "+p.civName)}else if(!accepted)tip("invitation declined");tmRenderPlayers()})}
 function tmEnterRoom(){tmSetMultiplayer();$("titleMenu").classList.add("tm-hidden");tmRenderOwnerControls();tmRenderPlayers();tmPublishPlayer();tip("Connected to private room "+tmRoomCode+". Open World Book → People to view players.")}
 function tmCreatePrivateRoom(){
- tmPrivateRoom=true;tmIsOwner=true;tmRenderOwnerControls();tmSetMultiplayer();tmRoomAction="create";tmRoomReady=false;tmRoomCode="";
+ tmOwnerToken=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());tmPrivateRoom=true;tmIsOwner=true;tmRenderOwnerControls();tmSetMultiplayer();tmRoomAction="create";tmRoomReady=false;tmRoomCode="";
  $("tm-code").value="";$("tm-code").style.display="none";tmShow("private-code");
  $("tm-private-result").textContent="Connecting to multiplayer server...";
- tmConnect().then(socket=>new Promise((resolve,reject)=>socket.emit("create-room",{name:tmSelectedName()},resolve)))
- .then(result=>{if(!result?.ok)throw new Error(result?.error||"Room creation failed.");tmRoomCode=result.code;tmRoomReady=true;$("tm-private-result").textContent="Private room created. Share this invite code with your friend: "+tmRoomCode+". Press Continue to enter.";$("tm-code").style.display="none"})
+ tmConnect().then(socket=>new Promise((resolve,reject)=>socket.emit("create-room",{name:tmSelectedName(),ownerToken:tmOwnerToken},resolve)))
+ .then(result=>{if(!result?.ok)throw new Error(result?.error||"Room creation failed.");tmRoomCode=result.code;tmIsOwner=true;tmRoomReady=true;tmRenderOwnerControls();$("tm-private-result").textContent="Private room created. Share this invite code with your friend: "+tmRoomCode+". Press Continue to enter.";$("tm-code").style.display="none"})
  .catch(err=>{$("tm-private-result").textContent=err.message;tmRoomReady=false});
 }
 function tmJoinPrivateRoom(){
@@ -1234,8 +1294,8 @@ function tmSubmitPrivateCode(){
  const code=$("tm-code").value.trim().toUpperCase();
  if(!code){$("tm-private-result").textContent="Enter an invite code.";return}
  tmSetMultiplayer();$("tm-private-result").textContent="Connecting...";
- tmConnect().then(socket=>new Promise(resolve=>socket.emit("join-room",code,tmSelectedName(),resolve)))
- .then(result=>{if(!result?.ok)throw new Error(result?.error||"Could not join that room.");tmRoomCode=result.code;tmRoomReady=true;tmEnterRoom()})
+ tmConnect().then(socket=>new Promise(resolve=>socket.emit("join-room",{code,name:tmSelectedName()},resolve)))
+ .then(result=>{if(!result?.ok)throw new Error(result?.error||"Could not join that room.");tmRoomCode=result.code;tmIsOwner=!!result.owner;tmRoomReady=true;tmEnterRoom()})
  .catch(err=>{$("tm-private-result").textContent=err.message;tmRoomReady=false});
 }
 function tmRefreshSaves(){const el=$("tm-save-list");el.innerHTML="";["slot1","slot2","slot3"].forEach((k,i)=>{const meta=SAVEMETA[k]||"Empty slot";const row=document.createElement("div");row.className="tm-slot";const info=document.createElement("div");info.innerHTML="<b>Save "+(i+1)+"</b><small>"+(meta==="Empty slot"?"No saved world":String(meta).replace(/[&<>"]/g,""))+"</small>";const btn=document.createElement("button");btn.className="tm-btn secondary";btn.textContent=meta==="Empty slot"?"Empty":"Load";btn.disabled=meta==="Empty slot";btn.onclick=async()=>{const raw=await IDB.get(k).catch(()=>null);if(!raw){tip("No save in "+k);return}await loadSlot(k);$("titleMenu").classList.add("tm-hidden")};row.append(info,btn);el.append(row)})}
