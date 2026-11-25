@@ -1096,6 +1096,11 @@ let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[],tmGameMode="single";
 const TM_CHAR_KEY="civexp.multiplayer.characters.v1";
 const TM_SERVER_URL="https://civilization-experiment-server.onrender.com";
 let tmSocket=null,tmRoomCode="",tmRoomAction="",tmRoomReady=false,tmOnlinePlayers=[],tmSelectedPlayer=null,tmPendingTravel=[],tmPendingCiv=[];
+function tmShow(id){document.querySelectorAll("#titleMenu .tm-panel").forEach(p=>p.classList.add("tm-hidden"));const panel=$("tm-"+id);if(panel)panel.classList.remove("tm-hidden")}
+function tmReadChars(){try{const raw=localStorage.getItem(TM_CHAR_KEY);const parsed=raw?JSON.parse(raw):[];tmChars=Array.isArray(parsed)?parsed.slice(0,3):[]}catch(e){tmChars=[]}while(tmChars.length<3)tmChars.push(null);return tmChars}
+function tmWriteChars(){try{localStorage.setItem(TM_CHAR_KEY,JSON.stringify(tmChars))}catch(e){console.warn("Could not save character profiles:",e)}}
+function tmSelectedName(){const c=tmChars[tmSelectedChar];return c&&c.name?String(c.name):"Player"}
+function tmSetMultiplayer(){tmGameMode="multiplayer";if($("spd")){$("spd").value="1";$("spd").disabled=true}if($("pilotBtn"))$("pilotBtn").disabled=true;if(typeof autopilot!=="undefined")autopilot=false;if(P){P.n=tmSelectedName();const c=tmChars[tmSelectedChar];if(c&&c.color)P.col=c.color}}
 function tmEsc(v){return String(v||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function tmIsCivLeader(){return P&&P.civ>=0&&civs[P.civ]&&civs[P.civ].lead===P.gid}
 function tmRenderPlayers(){if(vis("bk")&&UIS.btab==="people")uiBook()}
