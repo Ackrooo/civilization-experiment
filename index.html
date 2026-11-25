@@ -1154,7 +1154,7 @@ newGame();requestAnimationFrame(frame)}
 
 
 /* Main menu and save/character selection */
-let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[],tmGameMode="single",tmPrivateRoom=false,tmIsOwner=false;
+let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[],tmGameMode="single",tmPrivateRoom=false,tmIsOwner=false,tmPublicServer=null,tmJoinedSocketId="";
 const TM_CHAR_KEY="civexp.multiplayer.characters.v1";
 const TM_SERVER_URL="https://civilization-experiment-server.onrender.com";
 let tmSocket=null,tmRoomCode="",tmOwnerToken=(localStorage.getItem("civexp.private.ownerToken")||""),tmGiveSearch="",tmRoomAction="",tmRoomReady=false,tmOnlinePlayers=[],tmSelectedPlayer=null,tmPendingTravel=[],tmPendingCiv=[];
@@ -1307,7 +1307,7 @@ function tmConnect(){
   if(tmSocket){tmSocket.disconnect();tmSocket=null}
   const socket=window.io(TM_SERVER_URL,{transports:["websocket","polling"],timeout:15000});tmSocket=socket;
   socket.once("connect",()=>resolve(socket));
-  socket.on("connect",()=>{if(tmRoomCode&&tmOwnerToken){socket.emit("join-room",{code:tmRoomCode,name:tmSelectedName(),ownerToken:tmOwnerToken},r=>{if(r?.ok){tmIsOwner=!!r.owner;tmRenderOwnerControls();tmPublishPlayer()}else{tmIsOwner=false;tmRenderOwnerControls()}})}});
+  socket.on("connect",()=>{tmJoinedSocketId="";if(tmPublicServer!=null){tmJoinPublicSocket(socket);return}if(tmPrivateRoom&&tmRoomCode){socket.emit("join-room",{code:tmRoomCode,name:tmSelectedName(),ownerToken:tmOwnerToken||""},r=>{if(r?.ok){tmIsOwner=!!r.owner;tmRenderOwnerControls();tmPublishPlayer()}else{tmIsOwner=false;tmRenderOwnerControls();tip(r?.error||"Could not reconnect to private server.")}})}});
   socket.once("connect_error",err=>reject(new Error("Could not connect to multiplayer server: "+err.message)));
   socket.on("owner-changed",p=>{tmIsOwner=!!(p&&p.id===socket.id);tmOnlinePlayers=tmOnlinePlayers.map(x=>({...x,owner:x.id===p?.id}));tmRenderOwnerControls();tip(tmIsOwner?"you are now the private server owner":"private server ownership changed")});
   socket.on("owner-command",p=>{if(p&&p.commandId)tmOwnerCommand(p.commandId)});
@@ -1328,9 +1328,11 @@ function tmSendTravelRequest(id){if(!tmSocket?.connected)return tip("not connect
 function tmRespondTravel(id,accepted){const p=tmPendingTravel.find(x=>x.id===id);if(!p)return;tmPendingTravel=tmPendingTravel.filter(x=>x.id!==id);if(!tmSocket?.connected)return;tmSocket.emit("travel-response",{requesterId:id,accepted,x:P.x,y:P.y,inCombat:!!(P.hitT&&P.hitT>time-2),onBoat:!!P.boat,name:tmSelectedName()});tmRenderPlayers()}
 function tmSendCivInvite(id){if(!tmIsCivLeader())return tip("only your civilization's leader can invite players");const civName=civs[P.civ].n;tmSocket.emit("civ-invite",{targetId:id,civName},r=>tip(r?.ok?"civilization invitation sent":r?.error||"could not send invitation"))}
 function tmRespondCiv(id,accepted){const p=tmPendingCiv.find(x=>x.id===id);if(!p)return;tmPendingCiv=tmPendingCiv.filter(x=>x.id!==id);tmSocket.emit("civ-response",{inviterId:id,accepted,civName:p.civName},r=>{if(accepted&&r?.ok){let c=civs.find(c=>!c.dead&&c.n===p.civName);if(!c)c=mkCiv(P,p.civName);else if(P.civ!==c.id)join(P,c);tip("you joined "+p.civName)}else if(!accepted)tip("invitation declined");tmRenderPlayers()})}
-function tmEnterRoom(){tmSetMultiplayer();$("titleMenu").classList.add("tm-hidden");tmRenderOwnerControls();tmRenderPlayers();tmPublishPlayer();tip("Connected to private room "+tmRoomCode+". Open World Book → People to view players.")}
+function tmEnterRoom(){tmSetMultiplayer();$("titleMenu").classList.add("tm-hidden");tmRenderOwnerControls();tmRenderPlayers();tmPublishPlayer();tip(tmPublicServer!=null?"Connected to Public Server "+tmPublicServer+". Open World Book → People to view players.":"Connected to private room "+tmRoomCode+". Open World Book → People to view players.")}
+function tmJoinPublicSocket(socket){if(!socket?.connected||tmPublicServer==null||tmJoinedSocketId===socket.id)return;tmJoinedSocketId=socket.id;socket.emit("join-public",{serverId:tmPublicServer,name:tmSelectedName()},r=>{if(!r?.ok){tmJoinedSocketId="";alert(r?.error||"Could not join public server.");tmShow("servers");return}tmRoomCode=r.code;tmPrivateRoom=false;tmIsOwner=false;tmOwnerToken="";tmRenderOwnerControls();tmEnterRoom()})}
+function tmJoinPublicServer(id){tmPublicServer=id;tmPrivateRoom=false;tmIsOwner=false;tmOwnerToken="";tmRoomCode="";tmJoinedSocketId="";tmSetMultiplayer();tmConnect().then(socket=>tmJoinPublicSocket(socket)).catch(err=>{tmPublicServer=null;alert(err.message||"Could not connect to multiplayer server.");tmShow("servers")})}
 function tmCreatePrivateRoom(){
- tmOwnerToken=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());tmPrivateRoom=true;tmIsOwner=true;tmRenderOwnerControls();tmSetMultiplayer();tmRoomAction="create";tmRoomReady=false;tmRoomCode="";
+ tmPublicServer=null;tmJoinedSocketId="";tmOwnerToken=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());tmPrivateRoom=true;tmIsOwner=true;tmRenderOwnerControls();tmSetMultiplayer();tmRoomAction="create";tmRoomReady=false;tmRoomCode="";
  $("tm-code").value="";$("tm-code").style.display="none";tmShow("private-code");
  $("tm-private-result").textContent="Connecting to multiplayer server...";
  tmConnect().then(socket=>new Promise((resolve,reject)=>socket.emit("create-room",{name:tmSelectedName(),ownerToken:tmOwnerToken},resolve)))
@@ -1338,7 +1340,7 @@ function tmCreatePrivateRoom(){
  .catch(err=>{$("tm-private-result").textContent=err.message;tmRoomReady=false});
 }
 function tmJoinPrivateRoom(){
- tmPrivateRoom=true;tmIsOwner=false;tmRenderOwnerControls();tmSetMultiplayer();tmRoomAction="join";tmRoomReady=false;tmRoomCode="";
+ tmPublicServer=null;tmJoinedSocketId="";tmPrivateRoom=true;tmIsOwner=false;tmRenderOwnerControls();tmSetMultiplayer();tmRoomAction="join";tmRoomReady=false;tmRoomCode="";
  $("tm-code").value="";$("tm-code").style.display="block";tmShow("private-code");
  $("tm-private-result").textContent="Enter the invite code your friend gave you.";
 }
@@ -1359,7 +1361,7 @@ if(a==="main"||a==="play"||a==="single"||a==="multi"||a==="characters"||a==="ser
 if(a==="newworld"){tmGameMode="single";$("spd").disabled=false;$("pilotBtn").disabled=false;const seed=prompt("World seed (leave blank for a random world):","");newGame(seed||"");$("titleMenu").classList.add("tm-hidden");return}
 if(a==="createchar"){if(tmChars.filter(Boolean).length>=3){alert("All three character slots are occupied.");return}tmEditingChar=[0,1,2].find(i=>!tmChars[i]);$("tm-char-name").value="";tmShow("char-editor");return}
 if(a==="savechar"){const name=$("tm-char-name").value.trim();if(!name){alert("Enter a character name.");return}tmChars[tmEditingChar]={name,color:$("tm-char-color").value,items:[],equipment:{},created:Date.now()};tmWriteChars();tmRefreshChars();tmShow("characters");return}
-if(a==="server1"||a==="server2"||a==="server3"){tmSetMultiplayer();alert("Public servers are not configured yet. Private invite-code rooms are available.");return}
+if(a==="server1"||a==="server2"||a==="server3"){tmJoinPublicServer(Number(a.slice(-1)));return}
 if(a==="createprivate"){tmCreatePrivateRoom();return}
 if(a==="joinprivate"){tmJoinPrivateRoom();return}
 if(a==="submitcode"){tmSubmitPrivateCode();return}
