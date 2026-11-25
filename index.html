@@ -50,7 +50,7 @@ hr{border:0;border-top:1px solid var(--ln)}
 <canvas id="cv"></canvas>
 <div id="ui">
 <div id="hud"><b>civilization experiment</b><div class="bar" title="health"><i id="hp" style="background:#c8453a"></i></div><div class="bar" title="hunger"><i id="hu" style="background:#d49a30"></i></div><div class="bar" title="warmth"><i id="tpb" style="background:#d2b84a"></i></div><div id="inf"></div></div>
-<div id="mb"><button id="pilotBtn" data-a="autopilot:0">ai play: off</button> <button data-p="inv">inventory</button> <button data-p="cr">crafting</button> <button data-p="bk">book</button> <button data-p="cl">civ</button> <button data-p="mp">map</button> <button data-p="st">settings</button></div>
+<div id="mb"><button id="pilotBtn" data-a="autopilot:0">ai play: off</button> <button id="cmdBtn" data-p="cmd" style="display:none">commands</button> <button data-p="inv">inventory</button> <button data-p="cr">crafting</button> <button data-p="bk">book</button> <button data-p="cl">civ</button> <button data-p="mp">map</button> <button data-p="st">settings</button></div>
 <canvas id="mm" width="140" height="140"></canvas>
 <div id="hb"></div><div id="tt"></div><div id="hv"></div>
 <div id="inv" class="pn"><div class="hd"><b>inventory</b> <input id="iq" placeholder="search items" size="12"></div><div id="invb"></div></div>
@@ -61,6 +61,7 @@ hr{border:0;border-top:1px solid var(--ln)}
 <div id="st" class="pn"><div class="hd"><b>settings</b></div>music <input type="range" id="vm" min="0" max="100" value="50"> effects <input type="range" id="vs" min="0" max="100" value="70"><br>ambience <input type="range" id="va" min="0" max="100" value="50"> ui size <input type="range" id="uis" min="0.8" max="1.5" step="0.1" value="1"><br>game speed <select id="spd"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option></select> territory colors <select id="ter"><option value="0">off</option><option value="1">light</option><option value="2">strong</option></select><br><label><input type="checkbox" id="par"> weather particles</label> <label><input type="checkbox" id="aut"> autosave</label> <label><input type="checkbox" id="ae"> auto-equip best gear</label> <button id="fs">fullscreen</button><hr><div id="stb"></div></div>
 <div id="ch" class="pn"><div class="hd"><input id="chq" placeholder="search chest" size="12"></div><div id="chb"></div></div>
 <div id="pf" class="pn"><div class="hd"><b>profile</b></div><div id="pfb"></div></div>
+<div id="cmd" class="pn" style="right:8px;top:82px;width:min(440px,94vw);height:78%;box-sizing:border-box"><div class="hd"><b>private server commands</b> <button data-a="cmdclose:0">close</button></div><input id="cmdq" placeholder="search 200+ commands" style="width:96%;box-sizing:border-box;margin:4px 0"><div id="cmdb"></div></div>
 
 <div id="end"></div>
 <div id="hint">wasd move · click harvest/attack · right click use/remove · e interact · f5 save · f9 load · home recenter · c i t v m</div>
@@ -869,7 +870,7 @@ function sh(id,h){const e=$(id);if(e._h!==h){e._h=h;e.innerHTML=h}}
 const vis=id=>$(id).style.display=="block",tabs=(n,list,cur)=>list.map(t=>`<button data-a="tab:${n}:${t}" class="${t==cur?"on":""}">${t}</button>`).join(" ");
 function ui(){const p=P;$("hp").style.width=clamp(p.hp,0,100)+"%";$("hu").style.width=clamp(p.hun,0,100)+"%";$("tpb").style.width=clamp((p.tp+10)*3.3,0,100)+"%";$("tpb").style.background=p.tp<0?"#6aa8e8":p.tp>22?"#e8742a":"#d2b84a";uiHB();
 const c=p.civ>=0?civs[p.civ]:null,tt=ageOf(p)<16?"minor":"adult";$("inf").innerHTML=`${fname(p)} · age ${ageOf(p)|0} (${stageOf(p)})<br>${dstr(time)} · ${hour()|0}:00 · ${WX.t}<br>${c?`<span style="color:${c.col}">■</span> ${c.n} (${c.stage}, ${c.mem.length}) ${c.lead==p.gid?"· you lead":""}${Object.keys(c.war).length?' · <span class="no">at war</span>':""}`:"no civilization (v)"}${p.boat?`<br>sailing · boat ${(p.boat.du/BS[p.boat.k].du*100)|0}%`:""}${`<br>position: ${p.x|0}, ${p.y|0} · zoom ${zoom.toFixed(1)}x`}${pend.length+invs.length+offers.length?`<br><span class="ok">${pend.length+invs.length+offers.length} requests (v)</span>`:""}${p.cq.length?`<br>crafting ${RC[p.cq[0].id].n} (${p.cq.length})`:""}${autopilot?`<br><span class="ok">ai autopilot active</span>`:""}`;
-if(vis("inv"))uiInv();if(vis("cr"))uiCraft();if(vis("bk"))uiBook();if(vis("cl"))uiCiv();if(vis("ch"))uiChest();if(vis("st"))uiSet();if(vis("mp"))uiMap();if(vis("pf"))uiProf();mmDraw()}
+if(vis("inv"))uiInv();if(vis("cr"))uiCraft();if(vis("cmd"))uiCommands();if(vis("bk"))uiBook();if(vis("cl"))uiCiv();if(vis("ch"))uiChest();if(vis("st"))uiSet();if(vis("mp"))uiMap();if(vis("pf"))uiProf();mmDraw()}
 function uiInv(){const q=UIS.iq.toLowerCase(),cat=UIS.icat,eqs=["armor","shield"].map(sl=>`<div class="sl" data-w="eq:${sl}" data-j="0" title="${sl}">${P.eq[sl]?`<img src="${IC[P.eq[sl].i]}">`:`<small>${sl}</small>`}</div>`).join(""),held=P.inv[P.sel];
 sh("invb",`<div>equipment: ${eqs} held: ${held?IT[held.i].n:"hands"} · armor ${armorOf(P)} · warmth +${warmOf(P)}</div><div>${["all",...CATS.slice(0,0),"material","food","tool","weapon","armor","building","misc"].map(c=>`<button data-a="tab:icat:${c}" class="${c==cat?"on":""}">${c}</button>`).join(" ")} <button data-a="sortinv:0">sort bag</button> <button data-a="quickstack:0">quick stack to chests</button> <button data-a="autoequip:0">equip best</button></div><div class="g">${P.inv.map((s,j)=>{if(s&&(q&&!IT[s.i].n.includes(q)||cat!="all"&&IT[s.i].cat!=cat))return`<div class="sl dim" data-w="inv" data-j="${j}">${slot(s,j,"inv").replace(/^<div[^>]*>/,"").replace(/<\/div>$/,"")}</div>`;return slot(s,j,"inv",j==P.sel&&j<8?true:ISEL&&ISEL.w=="inv"&&ISEL.j==j)}).join("")}</div><small>click two slots to swap · shift-click quick transfer · right-click splits a stack · slots 1-8 are your hotbar</small>`)}
 function chestSrc(i){return typeof i=="string"?{inv:boats[+i.slice(1)]&&boats[+i.slice(1)].inv,name:"boat storage",own:-1}:{inv:CH[i],name:CN[i]||"chest",own:CO[i]}}
@@ -974,7 +975,7 @@ case"give":if(lead){const o=civs[n],L=actors[o.lead];let g=0;for(const r of["woo
 case"terr":if(lead){const o=civs[n],cl=claims.filter(x=>x.civ==n)[0];if(cl&&aiAccept("territory",c,o))transferClaim(cl,P.civ,"ceded under pressure");else{annoy(P.civ,n,-15);tip(o.n+" refuses to cede land")}}break;
 case"law":if(c)c.law[v]=!c.law[v];break;case"lead":if(lead){c.lead=n;ev("leader",`${fname(P)} appointed ${fname(actors[n])} as leader of ${c.n}`,{who:[n],civ:c.id,imp:true,n:true})}break;
 case"coun":if(c){if(c.coun.includes(n))c.coun=c.coun.filter(g=>g!=n);else if(c.coun.length<3)c.coun.push(n)}break;
-case"mk":UIS.mk=v;break;case"deadtog":UIS.dead^=1;break;case"aitog":UIS.playersOnly^=1;break;case"mpplayer":tmSelectedPlayer=v;break;case"mpinvite":tmSendCivInvite(v);break;case"travelrequest":tmSendTravelRequest(v);break;case"travelaccept":tmRespondTravel(v,true);break;case"traveldecline":tmRespondTravel(v,false);break;case"civaccept":tmRespondCiv(v,true);break;case"civdecline":tmRespondCiv(v,false);break;case"evf":UIS.evf=v;break;
+case"mk":UIS.mk=v;break;case"deadtog":UIS.dead^=1;break;case"aitog":UIS.playersOnly^=1;break;case"mpplayer":tmSelectedPlayer=v;break;case"mpinvite":tmSendCivInvite(v);break;case"travelrequest":tmSendTravelRequest(v);break;case"travelaccept":tmRespondTravel(v,true);break;case"traveldecline":tmRespondTravel(v,false);break;case"civaccept":tmRespondCiv(v,true);break;case"civdecline":tmRespondCiv(v,false);break;case"evf":UIS.evf=v;break;case"command":if(tmPrivateRoom&&tmIsOwner)tmSendCommand(v+(w?":"+w:""));else tip("commands are only available to the private server owner");break;case"cmdclose":togg("cmd");break;
 case"newworld":{const s=($("sd")?$("sd").value:"").trim();closeAll();$("end").style.display="none";newGame(s);}break;
 case"loadauto":$("end").style.display="none";loadSlot("auto");break;case"save":saveSlot(v,true);break;case"load":loadSlot(v);break;
 case"key":UIS.rb=v;tip("press the new key for "+KBN[v]);break;case"keyreset":KB=Object.assign({},KBD);saveSet();break;
@@ -985,9 +986,9 @@ const rle=a=>{const o=[];let p=a[0],n=1;for(let i=1;i<a.length;i++){if(a[i]==p&&
 const IDB={db:null,open(){return this.db?Promise.resolve(this.db):new Promise((res,rej)=>{try{const r=indexedDB.open("civexp",1);r.onupgradeneeded=()=>r.result.createObjectStore("s");r.onsuccess=()=>{this.db=r.result;res(r.result)};r.onerror=()=>rej(r.error)}catch(e){rej(e)}})},put(k,v){return this.open().then(db=>new Promise((res,rej)=>{const t=db.transaction("s","readwrite");t.objectStore("s").put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)}))},get(k){return this.open().then(db=>new Promise((res,rej)=>{const r=db.transaction("s").objectStore("s").get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))}};
 let SAVEMETA={},lastAuto=-99;
 function serialize(){return{v:3,seed,time,P:P.gid,rot,T:rle(T),O:rle(O),B:rle(B),Rf:rle(Rf),RD:rle(RD),KN:rle(KN),H,F,FW,CH,CN,CO,CA,STR,SU,TR,ISL,WF:[...WF],FARMS:[...FARMS],animals,drops,boats,civs,claims,LIN,MARKS,ST,WX,EV:EV.slice(-800),TALK:TALK.slice(-150),CL:CL.slice(-60),actors:actors.map(a=>({...a,seen:[...a.seen],cr:[...a.cr],tgt:null,tg_:null,path:null,shS:null,boat:a.boat?boats.indexOf(a.boat):-1,bad:{}}))}}
-async function saveSlot(k,manual){try{const s=JSON.stringify(serialize());if(!s||s.length<2000)throw new Error("nothing to save");const meta=`${dstr(time)} · ${actors.filter(al).length} people`,old=await IDB.get(k).catch(()=>null);await IDB.put(k+".tmp",s);if(old)await IDB.put(k+".bak",old);await IDB.put(k,s);await IDB.put(k+".meta",meta);SAVEMETA[k]=meta;tip(manual?"saved to "+k:"autosaved")}catch(e){tip("save failed: "+(e&&e.message||e))}}
-function autoSave(why){if(!SET.auto||!P||paused&&why!="timer"&&false)return;if(why!="timer"&&time-lastAuto<25)return;lastAuto=time;saveSlot("auto",false)}
-async function loadSlot(k){try{let s=await IDB.get(k),o=null;try{o=s&&JSON.parse(s)}catch(e){o=null}if(!o){s=await IDB.get(k+".bak");o=s&&JSON.parse(s)}if(!o)return tip("no save in "+k);if(o.v!=3)return tip("that save is from an older version");restore(o);tip("loaded "+k)}catch(e){tip("load failed: "+(e&&e.message||e))}}
+async function saveSlot(k,manual){if(tmPrivateRoom&&tmGameMode==="multiplayer"){tip("private server progress cannot be saved");return}try{const s=JSON.stringify(serialize());if(!s||s.length<2000)throw new Error("nothing to save");const meta=`${dstr(time)} · ${actors.filter(al).length} people`,old=await IDB.get(k).catch(()=>null);await IDB.put(k+".tmp",s);if(old)await IDB.put(k+".bak",old);await IDB.put(k,s);await IDB.put(k+".meta",meta);SAVEMETA[k]=meta;tip(manual?"saved to "+k:"autosaved")}catch(e){tip("save failed: "+(e&&e.message||e))}}
+function autoSave(why){if(tmPrivateRoom&&tmGameMode==="multiplayer")return;if(!SET.auto||!P||paused&&why!="timer"&&false)return;if(why!="timer"&&time-lastAuto<25)return;lastAuto=time;saveSlot("auto",false)}
+async function loadSlot(k){if(tmPrivateRoom&&tmGameMode==="multiplayer"){tip("private server progress cannot be loaded");return}try{let s=await IDB.get(k),o=null;try{o=s&&JSON.parse(s)}catch(e){o=null}if(!o){s=await IDB.get(k+".bak");o=s&&JSON.parse(s)}if(!o)return tip("no save in "+k);if(o.v!=3)return tip("that save is from an older version");restore(o);tip("loaded "+k)}catch(e){tip("load failed: "+(e&&e.message||e))}}
 function restore(o){seed=o.seed;time=o.time;rot=o.rot||0;T=unrle(o.T,N);O=unrle(o.O,N);B=unrle(o.B,N);Rf=unrle(o.Rf,N);RD=unrle(o.RD,N);KN=unrle(o.KN,N);TO=new Uint8Array(N);TD=new Uint8Array(N);TC=new Uint8Array(N);H=o.H;F=o.F;FW=o.FW||{};CH=o.CH;CN=o.CN;CO=o.CO;CA=o.CA;STR=o.STR;SU=o.SU;TR=o.TR;ISL=o.ISL;WF=new Set(o.WF);FARMS=new Set(o.FARMS);animals=o.animals;drops=o.drops;boats=o.boats;civs=o.civs;claims=o.claims;LIN=o.LIN;MARKS=o.MARKS;ST=o.ST;WX=o.WX;EV=o.EV;TALK=o.TALK;CL=o.CL;projs=[];offers=[];pend=[];invs=[];
 actors=o.actors.map(a=>({...a,seen:new Set(a.seen),cr:new Set(a.cr),boat:a.boat>=0?boats[a.boat]:null}));P=actors[o.P];cam.x=P.x;cam.y=P.y;paused=false;closeAll();$("end").style.display="none";mmRebuild();reveal.l=-1;computeTerritory();countTerr();buildGrid()}
 // ---- new game ----
@@ -1080,7 +1081,7 @@ document.addEventListener("contextmenu",e=>{const s=e.target.closest("[data-w]")
 document.addEventListener("click",e=>{au();if(uiClick(e))return;const b=e.target.closest("[data-p]");if(b){if(b.dataset.p=="mp"&&!cnt(P,"map")&&!cnt(P,"map2"))return tip("craft a map at a workbench first");return togg(b.dataset.p)}
 const s=e.target.closest("[data-w]");if(s){const w=s.dataset.w;if(w=="hb"){P.sel=+s.dataset.j;uiHB();return}slotClick(w,+s.dataset.j,e);uiNow()}});
 document.addEventListener("change",e=>{const j=e.target.dataset&&e.target.dataset.job;if(j!=null){actors[+j].job=e.target.value;tip(`${actors[+j].n} is now ${e.target.value||"free to choose"}`)}});
-const bind=(id,k)=>$(id).addEventListener("input",e=>{UIS[k]=e.target.value;uiNow()});bind("iq","iq");bind("cq","cq");bind("bq","bq");bind("chq","chq");
+const bind=(id,k)=>$(id).addEventListener("input",e=>{UIS[k]=e.target.value;uiNow()});bind("iq","iq");bind("cq","cq");bind("bq","bq");bind("chq","chq");$("cmdq").addEventListener("input",()=>uiCommands());
 $("mc").addEventListener("click",e=>{const r=$("mc").getBoundingClientRect(),x=Math.floor((e.clientX-r.left)/r.width*WS),y=Math.floor((e.clientY-r.top)/r.height*WS);if(e.shiftKey){const k=MARKS.findIndex(m=>Math.abs(m.x-x)<6&&Math.abs(m.y-y)<6);if(k>=0)MARKS.splice(k,1)}else MARKS.push({x,y,t:UIS.mk,n:UIS.mk});uiNow()});
 $("vm").oninput=e=>{vol.m=e.target.value/100;setVol()};$("vs").oninput=e=>{vol.s=e.target.value/100;setVol()};$("va").oninput=e=>{vol.a=e.target.value/100;setVol()};
 $("uis").oninput=e=>{SET.ui=+e.target.value;$("ui").style.zoom=SET.ui;saveSet()};$("spd").onchange=e=>gspd=+e.target.value;$("ter").onchange=e=>{SET.ter=+e.target.value;saveSet()};$("par").onchange=e=>{SET.part=e.target.checked?1:0;saveSet()};$("aut").onchange=e=>{SET.auto=e.target.checked?1:0;saveSet()};$("ae").onchange=e=>{SET.autoEquip=e.target.checked?1:0;saveSet()};
@@ -1092,7 +1093,7 @@ newGame();requestAnimationFrame(frame)}
 
 
 /* Main menu and save/character selection */
-let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[],tmGameMode="single";
+let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[],tmGameMode="single",tmPrivateRoom=false,tmIsOwner=false;
 const TM_CHAR_KEY="civexp.multiplayer.characters.v1";
 const TM_SERVER_URL="https://civilization-experiment-server.onrender.com";
 let tmSocket=null,tmRoomCode="",tmRoomAction="",tmRoomReady=false,tmOnlinePlayers=[],tmSelectedPlayer=null,tmPendingTravel=[],tmPendingCiv=[];
@@ -1101,6 +1102,67 @@ function tmReadChars(){try{const raw=localStorage.getItem(TM_CHAR_KEY);const par
 function tmWriteChars(){try{localStorage.setItem(TM_CHAR_KEY,JSON.stringify(tmChars))}catch(e){console.warn("Could not save character profiles:",e)}}
 function tmSelectedName(){const c=tmChars[tmSelectedChar];return c&&c.name?String(c.name):"Player"}
 function tmSetMultiplayer(){tmGameMode="multiplayer";if($("spd")){$("spd").value="1";$("spd").disabled=true}if($("pilotBtn"))$("pilotBtn").disabled=true;if(typeof autopilot!=="undefined")autopilot=false;if(P){P.n=tmSelectedName();const c=tmChars[tmSelectedChar];if(c&&c.color)P.col=c.color}}
+function tmRenderOwnerControls(){const b=$("cmdBtn");if(b)b.style.display=tmPrivateRoom&&tmIsOwner?"inline-block":"none"}
+function tmBuildCommands(){
+ const out=[],addCmd=(id,label,category,description)=>out.push({id,label,category,description});
+ addCmd("server-reset","Reset server","server","Generate a fresh world for everyone in this private server");
+ for(const [id,label] of [["effect:heal","Restore health"],["effect:feed","Fill hunger"],["effect:warm","Restore warmth"],["effect:all","Restore all needs"],["effect:invincible","Full health and needs"],["weather:clear","Clear weather"],["weather:rain","Start rain"],["weather:heavy","Heavy rain"],["weather:storm","Thunderstorm"],["weather:fog","Thick fog"],["weather:snow","Snowfall"],["weather:snowstorm","Snowstorm"],["weather:wind","Strong wind"],["time:6","Set sunrise"],["time:12","Set noon"],["time:18","Set sunset"],["time:0","Set midnight"],["time:day","Skip to next day"],["time:night","Skip to night"],["season:spring","Set spring"],["season:summer","Set summer"],["season:autumn","Set autumn"],["season:winter","Set winter"]])addCmd(id,label,"world","Change world conditions immediately");
+ for(const qty of [1,10,64])for(const id of Object.keys(IT))addCmd("give:"+id+":"+qty,"Give "+qty+" "+IT[id].n,"items","Add items directly to your inventory");
+ for(const qty of [1,5,10,25,50])addCmd("spawn:people:"+qty,"Spawn "+qty+" people","people","Create new independent AI characters near you");
+ for(const qty of [1,5,10,25,50])addCmd("spawn:animals:"+qty,"Spawn "+qty+" animals","people","Populate nearby land with animals");
+ for(const id of Object.keys(PB).map(k=>BI[PB[k]]).filter(Boolean))addCmd("build:"+id,"Place "+(IT[id]?.n||id),"building","Place this structure near your character");
+ for(const [id,label] of [["build:house","Build a house"],["build:house","Build another house"],["effect:clear-area","Clear nearby drops"],["effect:reveal","Reveal nearby map"],["effect:teleport","Teleport to map center"],["effect:random-teleport","Random teleport"],["effect:boost","Boost movement"],["effect:reset-needs","Reset needs"],["effect:spawn-camp","Build a starter camp"],["effect:spawn-village","Build a small village"],["effect:spawn-castle","Build a castle"],["effect:spawn-farm","Build a farm"],["effect:spawn-ship","Place a ship"],["effect:spawn-army","Spawn a group of guards"],["effect:peace","Clear nearby combat"],["effect:daylight","Set bright daytime"],["effect:darkness","Set deep night"],["effect:clear-drops","Clear all nearby dropped items"]])addCmd(id,label,"world","Trigger a world event or build preset");
+ const presets=["starter","farm","watchtower","market","workshop","fort","castle","village","harbor","camp"];
+ for(const p of presets)addCmd("preset:"+p,"Build "+p,"building","Create a themed structure layout near you");
+ while(out.length<200){const n=out.length+1;addCmd("effect:celebrate:"+n,"World chaos event "+n,"world","Trigger a randomized world event")}
+ return out.slice(0,200);
+}
+const TM_COMMANDS=tmBuildCommands();
+function tmRunCommand(id,fromServer){
+ if(!P)return;
+ const parts=String(id).split(":"),kind=parts[0],arg=parts[1],qty=+(parts[2]||1);
+ if(kind==="give"){if(IT[arg]){add(P,arg,qty);tip("command: gave "+qty+" "+IT[arg].n)}return}
+ if(kind==="weather"){WX.t=arg;WX.nx=120;WX.i=arg==="clear"?0:Math.max(WX.i,.75);tip("weather changed to "+arg);return}
+ if(kind==="time"){if(arg==="day")time=Math.floor(time/DAY)*DAY+DAY;else if(arg==="night")time=Math.floor(time/DAY)*DAY+DAY*.78;else time=Math.floor(time/DAY)*DAY+(+arg/24)*DAY;tip("time changed");return}
+ if(kind==="season"){const idx={spring:0,summer:1,autumn:2,winter:3}[arg];if(idx!=null)time=Math.floor(time/YEAR)*YEAR+idx*SEAS;tip("season changed to "+arg);return}
+ if(kind==="spawn"&&arg==="people"){for(let i=0;i<qty;i++){let x=P.x,y=P.y;for(let n=0;n<40;n++){const tx=(P.x+rr()*20-10)|0,ty=(P.y+rr()*20-10)|0;if(freeSpot(tx,ty)){x=tx+.5;y=ty+.5;break}}mkActor(true,x,y,{n:nm()})}tip("spawned "+qty+" people");return}
+ if(kind==="spawn"&&arg==="animals"){for(let i=0;i<qty;i++)spawnAn();tip("spawned "+qty+" animals");return}
+ if(kind==="build"){if(!IT[arg])return;let made=0;for(let r=1;r<18&&!made;r++)for(let dy=-r;dy<=r&&!made;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=(P.x|0)+dx,y=(P.y|0)+dy;if(canPut(arg,x,y)){add(P,arg,1);if(put(P,arg,x,y)){made++;break}}}tip(made?"placed "+IT[arg].n:"no room to place that structure");return}
+ if(kind==="preset"){tmBuildPreset(arg);return}
+ if(kind==="effect"){
+  if(arg==="heal"||arg==="all"||arg==="invincible")P.hp=100;
+  if(arg==="feed"||arg==="all"||arg==="invincible")P.hun=100;
+  if(arg==="warm"||arg==="all"||arg==="invincible")P.tp=28;
+  if(arg==="invincible"){P.eq.armor=P.eq.armor||{i:"iron_armor",du:999};}
+  if(arg==="reset-needs"){P.hp=100;P.hun=100;P.tp=28}
+  if(arg==="teleport"){P.x=WS/2;P.y=WS/2}
+  if(arg==="random-teleport"){for(let n=0;n<200;n++){const x=rr()*WS|0,y=rr()*WS|0;if(freeSpot(x,y)){P.x=x+.5;P.y=y+.5;break}}}
+  if(arg==="boost")P.spd=8;
+  if(arg==="clear-area"||arg==="clear-drops"){drops=drops.filter(d=>Math.hypot(d.x-P.x,d.y-P.y)>24)}
+  if(arg==="reveal"){for(let y=-35;y<=35;y++)for(let x=-35;x<=35;x++){const xx=(P.x|0)+x,yy=(P.y|0)+y;if(wr(xx,yy))KN[li(xx,yy)]=1}}
+  if(arg==="peace"){for(const a of actors)if(Math.hypot(a.x-P.x,a.y-P.y)<35){a.hitT=0;a.tgt=null;a.gr={}}}
+  if(arg==="daylight")time=Math.floor(time/DAY)*DAY+DAY*.5;
+  if(arg==="darkness")time=Math.floor(time/DAY)*DAY+DAY*.92;
+  if(arg==="spawn-camp")tmBuildPreset("starter");
+  if(arg==="spawn-village")tmBuildPreset("village");
+  if(arg==="spawn-castle")tmBuildPreset("castle");
+  if(arg==="spawn-farm")tmBuildPreset("farm");
+  if(arg==="spawn-ship")tmRunCommand("build:ship",false);
+  if(arg==="spawn-army")tmRunCommand("spawn:people:10",false);
+  if(arg.startsWith("celebrate")){WX.fl=1;for(let i=0;i<12;i++)spawnAn()}
+  if(arg==="clear-weather"){WX.t="clear";WX.i=0;WX.nx=120}
+  tip("command executed");return
+ }
+}
+function tmBuildPreset(type){
+ const layouts={starter:["house","campfire","workbench","chest"],farm:["farm","farm","farm","chest"],watchtower:["castlewall","castlewall","castlewall","castlewall","gate"],market:["workbench","chest","campfire","chest"],workshop:["workbench","furnace","anvil","cookstation"],fort:["castlewall","castlewall","gate","catapult"],castle:["castlewall","castlewall","castlewall","castlewall","gate","siege_tower","catapult"],village:["house","house","campfire","workbench","farm","chest"],harbor:["dock","ship","chest"],camp:["campfire","bed","workbench","chest"]};
+ const list=layouts[type]||layouts.starter;let placed=0;
+ for(let i=0;i<list.length;i++){const id=list[i];if(!IT[id])continue;for(let r=2;r<22&&!placed;r++)for(let dy=-r;dy<=r&&!placed;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=(P.x|0)+dx+i*2,y=(P.y|0)+dy;if(canPut(id,x,y)){add(P,id,1);if(put(P,id,x,y)){placed++;break}}}}
+ tip("built "+type+" preset ("+placed+" pieces)");
+}
+function tmSendCommand(id){if(!tmPrivateRoom||!tmIsOwner||!tmSocket?.connected){tip("only the connected private server owner can use commands");return}tmSocket.emit("owner-command",{commandId:id},r=>{if(!r?.ok)tip(r?.error||"command failed")})}
+function uiCommands(){const q=($("cmdq")?.value||"").toLowerCase().trim();const list=TM_COMMANDS.filter(c=>!q||(c.label+" "+c.category+" "+c.description+" "+c.id).toLowerCase().includes(q));sh("cmdb",'<small>'+list.length+' matching commands · click one to activate</small><div style="max-height:calc(100% - 28px);overflow:auto;margin-top:5px">'+list.map(c=>'<div class="box"><button data-a="command:'+c.id+'" style="width:100%;text-align:left"><b>'+tmEsc(c.label)+'</b> <small>['+tmEsc(c.category)+']</small><br><small>'+tmEsc(c.description)+'</small></button></div>').join("")+'</div>')}
+function tmOwnerCommand(id){if(id==="server-reset"){newGame(String(Math.floor(Math.random()*2147483647)));tmSetMultiplayer();tip("private server world reset");return}tmRunCommand(id,false)}
 function tmEsc(v){return String(v||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function tmIsCivLeader(){return P&&P.civ>=0&&civs[P.civ]&&civs[P.civ].lead===P.gid}
 function tmRenderPlayers(){if(vis("bk")&&UIS.btab==="people")uiBook()}
@@ -1112,9 +1174,12 @@ function tmConnect(){
   const socket=window.io(TM_SERVER_URL,{transports:["websocket","polling"],timeout:15000});tmSocket=socket;
   socket.once("connect",()=>resolve(socket));
   socket.once("connect_error",err=>reject(new Error("Could not connect to multiplayer server: "+err.message)));
+  socket.on("owner-changed",p=>{tmIsOwner=!!(p&&p.id===socket.id);tmOnlinePlayers=tmOnlinePlayers.map(x=>({...x,owner:x.id===p?.id}));tmRenderOwnerControls();tip(tmIsOwner?"you are now the private server owner":"private server ownership changed")});
+  socket.on("owner-command",p=>{if(p&&p.commandId)tmOwnerCommand(p.commandId)});
+  socket.on("server-reset",p=>{if(p&&p.seed){newGame(String(p.seed));tmSetMultiplayer();tip("the private server owner reset the world") }});
   socket.on("disconnect",reason=>{if(reason!=="io client disconnect")console.warn("Multiplayer disconnected:",reason)});
-  socket.on("room-players",players=>{tmOnlinePlayers=Array.isArray(players)?players:[];tmRenderPlayers()});
-  socket.on("player-joined",player=>{if(player&&!tmOnlinePlayers.some(p=>p.id===player.id))tmOnlinePlayers.push(player);tmRenderPlayers()});
+  socket.on("room-players",players=>{tmOnlinePlayers=Array.isArray(players)?players:[];tmIsOwner=!!tmOnlinePlayers.find(p=>p.id===socket.id)?.owner;tmRenderOwnerControls();tmRenderPlayers()});
+  socket.on("player-joined",player=>{if(player&&!tmOnlinePlayers.some(p=>p.id===player.id))tmOnlinePlayers.push(player);tmRenderOwnerControls();tmRenderPlayers()});
   socket.on("player-left",player=>{tmOnlinePlayers=tmOnlinePlayers.filter(p=>p.id!==player.id);tmPendingTravel=tmPendingTravel.filter(p=>p.id!==player.id);tmPendingCiv=tmPendingCiv.filter(p=>p.id!==player.id);tmRenderPlayers()});
   socket.on("player-updated",player=>{const i=tmOnlinePlayers.findIndex(p=>p.id===player.id);if(i>=0)tmOnlinePlayers[i]={...tmOnlinePlayers[i],...player};else tmOnlinePlayers.push(player);tmRenderPlayers()});
   socket.on("travel-request",p=>{tmPendingTravel.push(p);tmRenderPlayers();tip(p.name+" wants to travel to you. Open World Book → People.")});
@@ -1128,9 +1193,9 @@ function tmSendTravelRequest(id){if(!tmSocket?.connected)return tip("not connect
 function tmRespondTravel(id,accepted){const p=tmPendingTravel.find(x=>x.id===id);if(!p)return;tmPendingTravel=tmPendingTravel.filter(x=>x.id!==id);if(!tmSocket?.connected)return;tmSocket.emit("travel-response",{requesterId:id,accepted,x:P.x,y:P.y,inCombat:!!(P.hitT&&P.hitT>time-2),onBoat:!!P.boat,name:tmSelectedName()});tmRenderPlayers()}
 function tmSendCivInvite(id){if(!tmIsCivLeader())return tip("only your civilization's leader can invite players");const civName=civs[P.civ].n;tmSocket.emit("civ-invite",{targetId:id,civName},r=>tip(r?.ok?"civilization invitation sent":r?.error||"could not send invitation"))}
 function tmRespondCiv(id,accepted){const p=tmPendingCiv.find(x=>x.id===id);if(!p)return;tmPendingCiv=tmPendingCiv.filter(x=>x.id!==id);tmSocket.emit("civ-response",{inviterId:id,accepted,civName:p.civName},r=>{if(accepted&&r?.ok){let c=civs.find(c=>!c.dead&&c.n===p.civName);if(!c)c=mkCiv(P,p.civName);else if(P.civ!==c.id)join(P,c);tip("you joined "+p.civName)}else if(!accepted)tip("invitation declined");tmRenderPlayers()})}
-function tmEnterRoom(){tmSetMultiplayer();$("titleMenu").classList.add("tm-hidden");tmRenderPlayers();tmPublishPlayer();tip("Connected to private room "+tmRoomCode+". Open World Book → People to view players.")}
+function tmEnterRoom(){tmSetMultiplayer();$("titleMenu").classList.add("tm-hidden");tmRenderOwnerControls();tmRenderPlayers();tmPublishPlayer();tip("Connected to private room "+tmRoomCode+". Open World Book → People to view players.")}
 function tmCreatePrivateRoom(){
- tmSetMultiplayer();tmRoomAction="create";tmRoomReady=false;tmRoomCode="";
+ tmPrivateRoom=true;tmIsOwner=true;tmRenderOwnerControls();tmSetMultiplayer();tmRoomAction="create";tmRoomReady=false;tmRoomCode="";
  $("tm-code").value="";$("tm-code").style.display="none";tmShow("private-code");
  $("tm-private-result").textContent="Connecting to multiplayer server...";
  tmConnect().then(socket=>new Promise((resolve,reject)=>socket.emit("create-room",{name:tmSelectedName()},resolve)))
@@ -1138,7 +1203,7 @@ function tmCreatePrivateRoom(){
  .catch(err=>{$("tm-private-result").textContent=err.message;tmRoomReady=false});
 }
 function tmJoinPrivateRoom(){
- tmSetMultiplayer();tmRoomAction="join";tmRoomReady=false;tmRoomCode="";
+ tmPrivateRoom=true;tmIsOwner=false;tmRenderOwnerControls();tmSetMultiplayer();tmRoomAction="join";tmRoomReady=false;tmRoomCode="";
  $("tm-code").value="";$("tm-code").style.display="block";tmShow("private-code");
  $("tm-private-result").textContent="Enter the invite code your friend gave you.";
 }
