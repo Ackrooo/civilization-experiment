@@ -1103,5 +1103,5 @@ $("tm-effects").oninput=e=>{vol.s=+e.target.value/100;setVol();$("vs").value=e.t
 $("tm-ambience").oninput=e=>{vol.a=+e.target.value/100;setVol();$("va").value=e.target.value};
 ["slot1","slot2","slot3"].forEach(k=>IDB.get(k+".meta").then(m=>{if(m)SAVEMETA[k]=m; if(!$("titleMenu").classList.contains("tm-hidden")&&!$("tm-saves").classList.contains("tm-hidden"))tmRefreshSaves()}).catch(()=>{}))}
 
-init();tmMenuInit();
+tmMenuInit();init();
 </script></body></html>
