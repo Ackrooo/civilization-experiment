@@ -23,6 +23,28 @@ button,input,select{font:inherit;text-transform:lowercase;background:var(--pn);c
 #mb{position:absolute;right:6px;top:calc(6px + env(safe-area-inset-top,0px))}#mm{position:absolute;left:6px;bottom:calc(6px + env(safe-area-inset-bottom,0px));border:2px solid var(--ln);width:140px;height:140px;image-rendering:pixelated}
 #end{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:520px;max-height:80%;overflow:auto;background:var(--pn);border:3px solid var(--ac);padding:12px;display:none}
 hr{border:0;border-top:1px solid var(--ln)}
+
+/* Cinematic front menu */
+#titleMenu{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 42%,rgba(93,72,42,.25),transparent 48%),linear-gradient(180deg,rgba(8,10,10,.94),rgba(15,14,12,.98));color:#eee3c9;font-family:Georgia,"Times New Roman",serif;overflow:auto}
+#titleMenu:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 90px,rgba(218,184,118,.025) 91px 92px);pointer-events:none}
+.tm-panel{position:relative;width:min(560px,92vw);padding:clamp(24px,5vw,52px);border:1px solid rgba(193,157,94,.42);background:linear-gradient(145deg,rgba(35,31,25,.94),rgba(13,15,15,.96));box-shadow:0 24px 100px #000b, inset 0 0 50px #b18a3a0b;text-align:center;animation:tmEnter .55s ease both}
+@keyframes tmEnter{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+.tm-title{font-size:clamp(30px,6vw,52px);font-weight:normal;letter-spacing:.16em;line-height:1.1;margin:0 0 34px;color:#e6d5b4;text-shadow:0 3px 24px #d1a65a35}
+.tm-title span{display:block;color:#c49b58;font-size:.52em;letter-spacing:.34em;margin-top:12px}
+.tm-actions{display:grid;gap:11px;width:min(310px,100%);margin:0 auto}
+.tm-btn{font:16px Georgia,serif;letter-spacing:.16em;text-transform:uppercase;color:#e9dec7;background:linear-gradient(90deg,#2a261f,#393124,#2a261f);border:1px solid #806b45;padding:14px 18px;cursor:pointer;transition:.18s}
+.tm-btn:hover{background:linear-gradient(90deg,#51432b,#6a5431,#51432b);border-color:#d4b16d;transform:translateY(-1px)}
+.tm-btn.secondary{font-size:13px;padding:11px}
+.tm-back{margin-top:22px}
+.tm-note{color:#b8aa8d;font:12px/1.5 Arial,sans-serif;margin:15px 0 0}
+.tm-list{display:grid;gap:9px;margin:18px 0;text-align:left}
+.tm-slot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px;background:#171714;border:1px solid #5e5038;color:#e9dec7;font:14px Arial,sans-serif}
+.tm-slot small{display:block;color:#a99a7d;margin-top:4px}
+.tm-row{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.tm-input{width:min(300px,90%);padding:12px;background:#111;color:#eee;border:1px solid #806b45;font:15px Arial,sans-serif}
+.tm-label{display:block;color:#c8b895;font:12px Arial,sans-serif;text-align:left;margin:12px auto 5px;max-width:300px}
+.tm-hidden{display:none!important}
+@media(max-width:520px){.tm-panel{padding:26px 18px}.tm-title{margin-bottom:24px}}
 </style></head><body>
 <canvas id="cv"></canvas>
 <div id="ui">
@@ -41,6 +63,70 @@ hr{border:0;border-top:1px solid var(--ln)}
 
 <div id="end"></div>
 <div id="hint">wasd move · click harvest/attack · right click use/remove · e interact · f5 save · f9 load · home recenter · c i t v m</div>
+</div>
+
+<div id="titleMenu">
+ <section class="tm-panel" id="tm-main">
+  <h1 class="tm-title">CIVILIZATION<span>EXPERIMENT</span></h1>
+  <div class="tm-actions">
+   <button class="tm-btn" data-tm="play">Play</button>
+   <button class="tm-btn" data-tm="settings">Settings</button>
+   <button class="tm-btn" data-tm="credits">Credits</button>
+  </div>
+ </section>
+ <section class="tm-panel tm-hidden" id="tm-play">
+  <h1 class="tm-title">PLAY</h1>
+  <div class="tm-actions"><button class="tm-btn" data-tm="single">Singleplayer</button><button class="tm-btn" data-tm="multi">Multiplayer</button></div>
+  <button class="tm-btn secondary tm-back" data-tm="main">Back</button>
+ </section>
+ <section class="tm-panel tm-hidden" id="tm-saves">
+  <h1 class="tm-title">SINGLEPLAYER</h1>
+  <div id="tm-save-list" class="tm-list"></div>
+  <button class="tm-btn" data-tm="newworld">Create New World</button>
+  <button class="tm-btn secondary tm-back" data-tm="play">Back</button>
+ </section>
+ <section class="tm-panel tm-hidden" id="tm-characters">
+  <h1 class="tm-title">MULTIPLAYER CHARACTER</h1>
+  <div id="tm-char-list" class="tm-list"></div>
+  <button class="tm-btn secondary" data-tm="createchar">Create Character</button>
+  <p class="tm-note">Up to three characters. Each character has a separate persistent profile.</p>
+  <button class="tm-btn secondary tm-back" data-tm="play">Back</button>
+ </section>
+ <section class="tm-panel tm-hidden" id="tm-char-editor">
+  <h1 class="tm-title">CHARACTER</h1>
+  <label class="tm-label" for="tm-char-name">Character name</label><input class="tm-input" id="tm-char-name" maxlength="18" placeholder="Enter a name">
+  <label class="tm-label" for="tm-char-color">Clothing color</label><input id="tm-char-color" type="color" value="#9b7545" style="width:90px;height:42px;background:#171714;border:1px solid #806b45">
+  <div class="tm-row"><button class="tm-btn" data-tm="savechar">Save Character</button></div>
+  <button class="tm-btn secondary tm-back" data-tm="characters">Back</button>
+ </section>
+ <section class="tm-panel tm-hidden" id="tm-servers">
+  <h1 class="tm-title">MULTIPLAYER</h1>
+  <div class="tm-actions">
+   <button class="tm-btn" data-tm="server1">Server 1</button><button class="tm-btn" data-tm="server2">Server 2</button><button class="tm-btn" data-tm="server3">Server 3</button><button class="tm-btn" data-tm="private">Private Server</button>
+  </div>
+  <button class="tm-btn secondary tm-back" data-tm="characters">Change Character</button>
+ </section>
+ <section class="tm-panel tm-hidden" id="tm-private">
+  <h1 class="tm-title">PRIVATE SERVER</h1>
+  <div class="tm-actions"><button class="tm-btn" data-tm="createprivate">Create Private Server</button><button class="tm-btn" data-tm="joinprivate">Join Private Server</button></div>
+  <button class="tm-btn secondary tm-back" data-tm="servers">Back</button>
+ </section>
+ <section class="tm-panel tm-hidden" id="tm-private-code">
+  <h1 class="tm-title">PRIVATE SERVER</h1>
+  <div id="tm-private-result" class="tm-note"></div>
+  <input class="tm-input" id="tm-code" maxlength="12" placeholder="Enter server code">
+  <div class="tm-row"><button class="tm-btn" data-tm="submitcode">Continue</button></div>
+  <button class="tm-btn secondary tm-back" data-tm="private">Back</button>
+ </section>
+ <section class="tm-panel tm-hidden" id="tm-settings">
+  <h1 class="tm-title">SETTINGS</h1>
+  <p class="tm-note">Additional game settings are available after entering a singleplayer world.</p>
+  <button class="tm-btn secondary tm-back" data-tm="main">Back</button>
+ </section>
+ <section class="tm-panel tm-hidden" id="tm-credits">
+  <h1 class="tm-title">CREDITS</h1><p class="tm-note">Civilization Experiment</p>
+  <button class="tm-btn secondary tm-back" data-tm="main">Back</button>
+ </section>
 </div>
 <script>
 
@@ -987,5 +1073,25 @@ IDB.get("auto.meta").then(m=>{if(m)SAVEMETA.auto=m}).catch(()=>{});for(const s o
 newGame();requestAnimationFrame(frame)}
 
 
-init();
+
+/* Main menu and save/character selection */
+let tmSelectedChar=-1,tmEditingChar=-1,tmChars=[];
+const TM_CHAR_KEY="civexp.multiplayer.characters.v1";
+function tmReadChars(){try{const v=JSON.parse(localStorage.getItem(TM_CHAR_KEY)||"[]");tmChars=Array.isArray(v)?v.slice(0,3):[]}catch(e){tmChars=[]}}
+function tmWriteChars(){try{localStorage.setItem(TM_CHAR_KEY,JSON.stringify(tmChars))}catch(e){}}
+function tmShow(id){document.querySelectorAll("#titleMenu .tm-panel").forEach(p=>p.classList.add("tm-hidden"));$("tm-"+id).classList.remove("tm-hidden")}
+function tmRefreshSaves(){const el=$("tm-save-list");el.innerHTML="";["slot1","slot2","slot3"].forEach((k,i)=>{const meta=SAVEMETA[k]||"Empty slot";const row=document.createElement("div");row.className="tm-slot";const info=document.createElement("div");info.innerHTML="<b>Save "+(i+1)+"</b><small>"+(meta==="Empty slot"?"No saved world":String(meta).replace(/[&<>"]/g,""))+"</small>";const btn=document.createElement("button");btn.className="tm-btn secondary";btn.textContent=meta==="Empty slot"?"Empty":"Load";btn.disabled=meta==="Empty slot";btn.onclick=async()=>{const raw=await IDB.get(k).catch(()=>null);if(!raw){tip("No save in "+k);return}await loadSlot(k);$("titleMenu").classList.add("tm-hidden")};row.append(info,btn);el.append(row)})}
+function tmRefreshChars(){tmReadChars();const el=$("tm-char-list");el.innerHTML="";for(let i=0;i<3;i++){const c=tmChars[i],row=document.createElement("div");row.className="tm-slot";const info=document.createElement("div");info.innerHTML=c?"<b>"+String(c.name).replace(/[&<>"]/g,"")+"</b><small>Character slot "+(i+1)+" · profile saved on this device</small>":"<b>Empty character slot "+(i+1)+"</b><small>No character created</small>";const btn=document.createElement("button");btn.className="tm-btn secondary";btn.textContent=c?"Select": "Create";btn.onclick=()=>{if(c){tmSelectedChar=i;tmShow("servers")}else{tmEditingChar=i;$("tm-char-name").value="";tmShow("char-editor")}};row.append(info,btn);el.append(row)}}
+function tmMenuInit(){tmReadChars();$("titleMenu").classList.remove("tm-hidden");tmShow("main");document.addEventListener("click",e=>{const b=e.target.closest("[data-tm]");if(!b)return;const a=b.dataset.tm;
+if(a==="main"||a==="play"||a==="single"||a==="multi"||a==="characters"||a==="servers"||a==="private"||a==="settings"||a==="credits"){if(a==="play")tmShow("play");else if(a==="single"){tmRefreshSaves();tmShow("saves")}else if(a==="multi"){tmRefreshChars();tmShow("characters")}else tmShow(a);return}
+if(a==="newworld"){const seed=prompt("World seed (leave blank for a random world):","");newGame(seed||"");$("titleMenu").classList.add("tm-hidden");return}
+if(a==="createchar"){if(tmChars.length>=3){alert("All three character slots are occupied.");return}tmEditingChar=[0,1,2].find(i=>!tmChars[i]);$("tm-char-name").value="";tmShow("char-editor");return}
+if(a==="savechar"){const name=$("tm-char-name").value.trim();if(!name){alert("Enter a character name.");return}tmChars[tmEditingChar]={name,color:$("tm-char-color").value,items:[],equipment:{},created:Date.now()};tmWriteChars();tmRefreshChars();tmShow("characters");return}
+if(a==="server1"||a==="server2"||a==="server3"){tmShow("servers");$("tm-private-result").textContent="";alert("Multiplayer servers are not connected yet. The online backend must be built before players can join shared worlds.");return}
+if(a==="createprivate"){tmShow("private-code");$("tm-private-result").textContent="Private server creation requires the multiplayer backend. No working invite code can be issued yet.";return}
+if(a==="joinprivate"){tmShow("private-code");$("tm-private-result").textContent="Enter your friend's invite code once the multiplayer backend is online.";return}
+if(a==="submitcode"){alert("Private server joining is not available until the multiplayer backend is connected.");return}
+});["slot1","slot2","slot3"].forEach(k=>IDB.get(k+".meta").then(m=>{if(m)SAVEMETA[k]=m; if(!$("titleMenu").classList.contains("tm-hidden")&&!$("tm-saves").classList.contains("tm-hidden"))tmRefreshSaves()}).catch(()=>{}))}
+
+init();tmMenuInit();
 </script></body></html>
