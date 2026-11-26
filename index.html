@@ -1075,7 +1075,7 @@ const c=mkCiv(a,name);c.stage="village";c.peak=1;c.law={conscript:true,ration:tr
 a.hp=100;a.hun=100;return c;
 }
 // Keep the three bosses close enough to the starting area to be seen immediately.
-const dragon=spawnHellBoss("The Red Dragon","dragon",px+12,py-9);
+const dragon=spawnHellBoss("Bad Dragon Freak Mode Style Freak","dragon",px+12,py-9);
 const troll=spawnHellBoss("The Hell Troll","troll",px-13,py+10);
 const satan=spawnHellBoss("Fucking Satan","satan",px+3,py-15);
 for(const boss of[dragon,troll,satan])for(const demon of[demon1,demon2,demon3])declareWar(boss.id,demon.id,"the struggle for Hell");
@@ -1115,13 +1115,13 @@ const LC=document.createElement("canvas"),LX=LC.getContext("2d");
 function person(a){const x=a.x*16,y=a.y*16,b=a.mv?Math.sin(a.ph*2.2):0,g=ageOf(a),s=g<4?.55:g<12?.7:g<16?.88:1;if(s<1){ctx.save();ctx.translate(x,y+7);ctx.scale(s,s);ctx.translate(-x,-y-7)}
 ctx.fillStyle="#0004";ctx.fillRect(x-4,y+4,8,3);ctx.fillStyle="#3a2c1c";ctx.fillRect(x-3,y+2+(b>0?1:0),2,4);ctx.fillRect(x+1,y+2+(b<0?1:0),2,4);
 if(a.bossType){
-if(a.bossType==="dragon"){
+if(a.bossType==="dragon"){ctx.save();ctx.translate(x,y);ctx.scale(4,4);ctx.translate(-x,-y);
 ctx.fillStyle="#0006";ctx.fillRect(x-12,y+7,24,4);
 ctx.fillStyle="#681c18";ctx.fillRect(x-10,y-5,20,12);ctx.fillRect(x-15,y-12,9,5);ctx.fillRect(x+6,y-12,9,5);
 ctx.fillStyle="#b83224";ctx.fillRect(x-7,y-12,14,12);ctx.fillRect(x-15,y-18,7,9);ctx.fillRect(x+8,y-18,7,9);
 ctx.fillStyle="#e45a32";ctx.fillRect(x-5,y-17,10,8);ctx.fillRect(x-18,y-15,6,3);ctx.fillRect(x+12,y-15,6,3);
 ctx.fillStyle="#ffdc72";ctx.fillRect(x-4,y-13,2,2);ctx.fillRect(x+3,y-13,2,2);
-ctx.fillStyle="#8e241d";ctx.fillRect(x-22,y-11,10,3);ctx.fillRect(x+12,y-11,10,3);ctx.fillRect(x-22,y-15,8,3);ctx.fillRect(x+14,y-15,8,3);
+ctx.fillStyle="#8e241d";ctx.fillRect(x-22,y-11,10,3);ctx.fillRect(x+12,y-11,10,3);ctx.fillRect(x-22,y-15,8,3);ctx.fillRect(x+14,y-15,8,3);ctx.restore();
 }else if(a.bossType==="troll"){
 ctx.fillStyle="#0006";ctx.fillRect(x-10,y+8,20,4);
 ctx.fillStyle="#35552b";ctx.fillRect(x-9,y-13,18,22);ctx.fillRect(x-13,y-8,5,15);ctx.fillRect(x+8,y-8,5,15);
