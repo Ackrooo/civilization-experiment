@@ -1074,9 +1074,10 @@ a.tr.agg=1;a.tr.amb=1;a.tr.cau=.1;a.tr.wrk=.9;a.base={x:p.x,y:p.y};
 const c=mkCiv(a,name);c.stage="village";c.peak=1;c.law={conscript:true,ration:true};seedGear(a);
 a.hp=100;a.hun=100;return c;
 }
-const dragon=spawnHellBoss("The Red Dragon","dragon",px+76,py-58);
-const troll=spawnHellBoss("The Hell Troll","troll",px-82,py+58);
-const satan=spawnHellBoss("Fucking Satan","satan",px+8,py-92);
+// Keep the three bosses close enough to the starting area to be seen immediately.
+const dragon=spawnHellBoss("The Red Dragon","dragon",px+12,py-9);
+const troll=spawnHellBoss("The Hell Troll","troll",px-13,py+10);
+const satan=spawnHellBoss("Fucking Satan","satan",px+3,py-15);
 for(const boss of[dragon,troll,satan])for(const demon of[demon1,demon2,demon3])declareWar(boss.id,demon.id,"the struggle for Hell");
 declareWar(satan.id,dragon.id,"the infernal throne");declareWar(satan.id,troll.id,"the infernal throne");
 
@@ -1155,7 +1156,7 @@ for(const p of projs){ctx.fillStyle=p.siege?"#a9a39a":"#eee";ctx.beginPath();ctx
 const pi=li(P.x|0,P.y|0);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(Rf[y*WS+x]){ctx.globalAlpha=Rf[pi]&&Math.abs(P.x-x)<6&&Math.abs(P.y-y)<5?.22:.95;ctx.drawImage(SPR.roof,x*16,y*16);ctx.globalAlpha=1}}
 const[tx,ty]=mtile(),hx=tx|0,hy=ty|0,hd=P.inv[P.sel]&&IT[P.inv[P.sel].i];if(hd&&hd.pl){const ok=canPut(P.inv[P.sel].i,hx,hy)&&Math.hypot(hx+.5-P.x,hy+.5-P.y)<6;ctx.globalAlpha=.55;ctx.fillStyle=ok?"#7fff7f":"#ff6a5a";if(P.inv[P.sel].i=="house"){const g=houseGeo(hx,hy);ctx.fillRect(g.x0*16,g.y0*16,g.w*16,g.h*16)}else ctx.fillRect(hx*16,hy*16,16,16);ctx.globalAlpha=1}else{ctx.strokeStyle="#fff8";ctx.lineWidth=1;ctx.strokeRect(hx*16+.5,hy*16+.5,15,15)}
 ctx.setTransform(D,0,0,D,0,0);lighting();weatherFx();
-ctx.font="11px 'Courier New',monospace";ctx.textAlign="center";const showN=zoom>=2;for(const a of vis2){if(!showN&&a!==P)continue;const sx=(a.x-cam.x)*16*zoom+cw/2,sy=(a.y-cam.y)*16*zoom+ch/2-14*zoom;if(sx<-60||sx>cw+60||sy<-20||sy>ch+20)continue;ctx.fillStyle="#000a";ctx.fillText(a.n,sx+1,sy+1);ctx.fillStyle=a===P?"#ffe27a":a.bossType?(a.bossType==="satan"?"#ff4b36":a.bossType==="dragon"?"#ff8a42":"#9fdb68"):"#fff";ctx.fillText(a.n,sx,sy);if(a.sayT>time&&a.say){const t2=a.say.slice(0,42),w=ctx.measureText(t2).width+10;ctx.fillStyle="#fffe";ctx.fillRect(sx-w/2,sy-24,w,15);ctx.fillStyle="#222";ctx.fillText(t2,sx,sy-13)}}
+ctx.font="11px 'Courier New',monospace";ctx.textAlign="center";const showN=zoom>=2;for(const a of vis2){if(!showN&&a!==P&&!a.bossType)continue;const sx=(a.x-cam.x)*16*zoom+cw/2,sy=(a.y-cam.y)*16*zoom+ch/2-14*zoom;if(sx<-60||sx>cw+60||sy<-20||sy>ch+20)continue;ctx.fillStyle="#000a";ctx.fillText(a.n,sx+1,sy+1);ctx.fillStyle=a===P?"#ffe27a":a.bossType?(a.bossType==="satan"?"#ff4b36":a.bossType==="dragon"?"#ff8a42":"#9fdb68"):"#fff";ctx.fillText(a.n,sx,sy);if(a.sayT>time&&a.say){const t2=a.say.slice(0,42),w=ctx.measureText(t2).width+10;ctx.fillStyle="#fffe";ctx.fillRect(sx-w/2,sy-24,w,15);ctx.fillStyle="#222";ctx.fillText(t2,sx,sy-13)}}
 for(const cl of claims){const c=civs[cl.civ];if(!c||zoom<1.3)continue;const sx=(cl.x+.5-cam.x)*16*zoom+cw/2,sy=(cl.y-cam.y)*16*zoom+ch/2-26*zoom;if(sx<-60||sx>cw+60||sy<-20||sy>ch+20)continue;ctx.fillStyle="#000a";ctx.fillText(`${c.n} · ${c.stage}`,sx+1,sy+1);ctx.fillStyle=c.col;ctx.fillText(`${c.n} · ${c.stage}`,sx,sy)}
 if(P.sl){ctx.fillStyle="rgba(0,0,20,.55)";ctx.fillRect(0,0,cw,ch);ctx.fillStyle="#fff";ctx.fillText("sleeping... move to wake",cw/2,ch/2)}}
 function lighting(){const d=dark(),h=hour();if(d<.02&&WX.fl<=0&&WX.i<.3)return;const w=cw>>1,hh=ch>>1;if(LC.width!=w){LC.width=w;LC.height=hh}LX.globalCompositeOperation="source-over";LX.clearRect(0,0,w,hh);
