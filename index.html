@@ -1056,7 +1056,7 @@ hellTileArt();B.fill(0);O.fill(0);STR.length=0;SU.length=0;RD.fill(0);FW={};
 for(let y=0;y<WS;y++)for(let x=0;x<WS;x++){const i=li(x,y),v=Math.sin(x*.071+Math.cos(y*.043)*3)*Math.cos(y*.067-x*.019),ridge=Math.sin(x*.018+y*.024);let t;
 if(v>.79||ridge>.94)t=0;else if(v<-.78)t=6;else if(v>.48)t=5;else if(v<-.48)t=3;else t=7;
 if(Math.sin(x*.11-y*.08)>.86&&t!==0&&t!==6)t=8;
-T[i]=t;E[i]=t===0?.2:.8;
+T[i]=t;
 }
 const px=P.x|0,py=P.y|0;
 for(let dy=-8;dy<=8;dy++)for(let dx=-8;dx<=8;dx++){const x=px+dx,y=py+dy;if(!wr(x,y))continue;const i=li(x,y);if(T[i]===0||T[i]===6)T[i]=7}
